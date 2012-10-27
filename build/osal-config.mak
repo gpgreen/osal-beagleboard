@@ -29,5 +29,6 @@ OS = posix
 ## BSP = pc-linux
 ## BSP = genppc-vxworks6.4
 ## BSP = mcf5235-rtems
+## BSP = beagle-linux
 ##---------------------------------------------------------
-BSP = pc-linux
+BSP = beagle-linux

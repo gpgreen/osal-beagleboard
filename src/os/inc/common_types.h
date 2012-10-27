@@ -167,6 +167,22 @@
    typedef unsigned long int                    uint32;
    _EXTENSION_ typedef unsigned long long int   uint64;
 
+#elif defined(__ARMV7__)
+   /* ----------------------- ARMV7 family ---------------------------*/
+   /* the ARM can be programmed big or little endian, we assume...    */
+   /* Little endian */
+   #undef   _STRUCT_HIGH_BIT_FIRST_
+   #define  _STRUCT_LOW_BIT_FIRST_
+
+   typedef unsigned char                        boolean;
+   typedef signed char                          int8;
+   typedef short int                            int16;
+   typedef long int                             int32;
+   typedef unsigned char                        uint8;
+   typedef unsigned short int                   uint16;
+   typedef unsigned long int                    uint32;
+   _EXTENSION_ typedef unsigned long long int   uint64;
+
 #else  /* not any of the above */
    #error undefined processor
 #endif  /* processor types */

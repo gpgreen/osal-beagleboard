@@ -30,7 +30,7 @@ ENDIAN_DEFS=-D_EL -DENDIAN=_EL -DSOFTWARE_LITTLE_BIT_ORDER
 ##
 ## Compiler Architecture Switches
 ## 
-ARCH_OPTS = -march=armv7-a -mthumb-interwork -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -fno-tree-vectorize --sysroot=/home/export/src/setup-scripts/build/tmp-angstrom_v2012_05-eglibc/sysroots/beagleboard
+ARCH_OPTS = -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mfpu=neon -fno-tree-vectorize --sysroot=/home/export/angstrom/setup-scripts/build/tmp-angstrom_v2013_12-eglibc/sysroots/beaglebone
 
 ##
 ## Application specific compiler switches 

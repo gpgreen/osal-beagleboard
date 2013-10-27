@@ -12,7 +12,7 @@
 ##
 ## Linker flags that are needed
 ##
-LDFLAGS = 
+LDFLAGS = --sysroot=/home/export/angstrom/setup-scripts/build/tmp-angstrom_v2013_12-eglibc/sysroots/beaglebone
 
 ##
 ## Libraries to link in

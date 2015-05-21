@@ -31,32 +31,28 @@ include ../../debug-opts.mak
 ##
 ##       compiler-opts.mak contains compiler definitions and switches/defines
 ##
-include $(OSAL_SRC)/bsp/$(BSP)/make/compiler-opts.mak
+include $(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/$(BSP)/make/compiler-opts.mak
 ##
 ##       SUBSYS.mak file contains the list of objects to compile
 ##
-include $(OSAL_SRC)/bsp/$(BSP)/src/$(SUBSYS).mak
+include $(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/$(BSP)/bsp/$(SUBSYS).mak
 
 ##
 ## Setup the include path for this subsystem
 ## The OS specific includes are in the compiler-opts.mak file
 ##
-## The /opt/static-loader paths are for the GSFC static loader 
-## component used in RTEMS. They can be ignored or removed
-##
 INCLUDE_PATH = \
 -I$(OSAL_SRC)/inc \
 -I$(OSAL_SRC)/os/inc \
--I$(OSAL_SRC)/bsp/$(BSP)/src \
--I../../inc \
--I/opt/static-loader/inc \
--I/opt/static-loader/libraries/loadstaticload
+-I$(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/$(BSP)/bsp \
+-I$(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/inc \
+-I../../inc
 
 ##
 ## Define the VPATH make variable. 
 ## This can be modified to include source from another directory.
 ##
-VPATH = $(OSAL_SRC)/bsp/$(BSP)/src
+VPATH = $(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/$(BSP)/bsp 
 
 ##
 ## Include the common make rules for the core subsystems

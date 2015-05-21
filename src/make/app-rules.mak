@@ -36,7 +36,7 @@ depend: $(SOURCES)
 ## Include the rule for linking the application.
 ## This is architecture/compiler/os specific, so it must be included from the ARCH directory
 ##
-include $(OSAL_SRC)/bsp/$(BSP)/make/link-rules.mak
+include $(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/$(BSP)/make/link-rules.mak
 
 ##
 ## Default rule for installing app

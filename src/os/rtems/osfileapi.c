@@ -1,94 +1,55 @@
 /*
 ** File   : osfileapi.c
-**
-**      Copyright (c) 2004-2006, United States government as represented by the 
-**      administrator of the National Aeronautics Space Administration.  
-**      All rights reserved. This software was created at NASAs Goddard 
-**      Space Flight Center pursuant to government contracts.
-**
-**      This is governed by the NASA Open Source Agreement and may be used, 
-**      distributed and modified only pursuant to the terms of that agreement.
-**
+
 ** Author : Nicholas Yanchik
-**
+
 ** Purpose: This file Contains all of the api calls for manipulating
-**            files in a file system for RTEMS 
-**
-** $Date: 2011/12/15 10:50:22EST $
-** $Revision: 1.17 $
+            files in a file system for OS X
+** $Date: 2007/10/16 16:14:58EDT $
+** $Revision: 1.1 $
 ** $Log: osfileapi.c  $
-** Revision 1.17 2011/12/15 10:50:22EST acudmore 
-** Removed file length check from OS_stat
-** Revision 1.16 2011/12/05 12:08:34EST acudmore 
-** Added O_TRUNC flag to OS_creat open call to handle the case of an existing file.
-** Revision 1.15 2011/12/05 12:07:07EST acudmore 
-** Completed OS Shell command functionality
-** Revision 1.14 2011/06/27 15:52:04EDT acudmore 
-** Went over APIs and Documentation for return code consistency.
-** Updated documentation, function comments, and return codes as needed.
-** Revision 1.13 2011/05/03 14:24:36EDT acudmore 
-** - Create semaphore for file system function lock
-** - Added function to close file by name
-** Revision 1.12 2011/03/23 11:13:02EDT acudmore 
-** Added mode parameter to open call in OS_cp. It was causing an error when using the RFS file system.
-** Revision 1.11 2010/11/15 11:06:46EST acudmore 
-** Added OS_FIleOpenCheck function
-** Revision 1.10 2010/11/12 12:41:59EST acudmore 
-** updated error codes in comments
-** Revision 1.9 2010/11/12 12:01:11EST acudmore 
-** replaced copyright character with (c) and added open source notice where needed.
-** Revision 1.8 2010/11/10 15:49:25EST acudmore 
-** Merged in MMS Fixes to RTEMS port.
-** Mostly fixed the left over posix mutex code in this file.
-** Revision 1.4 2010/08/09 11:45:36EDT acudmore 
-** Fixed semaphore code where RTEMS calls were using the same return code as the "open" and "close" calls.
-** Revision 1.3 2010/08/05 12:41:37EDT acudmore 
-** - Removed pthread mutex for internal data locking. Replaced with RTEMS semaphore.
-** - Implemented OS_cp and OS_mv
-** Revision 1.2 2010/03/12 14:04:22EST acudmore 
-** upated to OSAL 3.1
-** Revision 1.7 2010/02/01 12:40:42EST acudmore 
-** Changes to support return code on OS_API_Init
-** Revision 1.6 2010/01/25 14:45:14EST acudmore 
-** renamed "new" variable to avoid C++ reserved name conflict.
-** Revision 1.5 2009/07/16 13:02:23EDT acudmore 
-** Fixed warnings found by ARC.
-** Revision 1.4 2009/07/14 15:21:55EDT acudmore 
-** Updated RTEMS file API to sync with linux version.
-** Revision 1.4 2009/07/14 14:26:33EDT acudmore 
-** Fixed virtual vs. physical filename errors.
-** Created a new config parameter and created OS_TranslatePath.
-** OS_TranslatePath will replace OS_NameChange, but OS_NameChange is still included for now.
-** Revision 1.3 2009/07/10 14:58:54EDT acudmore 
-** Added code to clean up OSAL resources regardless of OS_close error
-** Revision 1.2 2009/03/10 10:53:49EDT nyanchik 
-** I made the changes to the comments of _OS_check_name_length foir all four OS's
-** Revision 1.1 2008/04/21 03:36:04BST ruperera 
+** Revision 1.1 2007/10/16 16:14:58EDT apcudmore 
 ** Initial revision
-** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-OSAL-REPOSITORY/src/os/linux/project.pj
-** Revision 1.3 2008/03/28 10:56:05EDT njyanchik 
-** I added the code shownin the DCR to OS_rename and OS_mv for all OS's
-** Revision 1.2 2008/01/22 15:16:49AST njyanchik 
-** I fixed the #define that is being used in the two functions listed in the DCR with the correct ones
-** Revision 1.1 2007/10/16 16:14:54EDT apcudmore 
-** Initial revision
+** Member added to project d:/mksdata/MKS-OSAL-REPOSITORY/src/os/rtems/project.pj
+** Revision 1.14 2007/07/05 14:58:59EDT njyanchik 
+** I sem-protected a bigger block in each of the create functions, and set the free flag (or IsValid 
+** flag) to false before sem protection ends. That way another task can't get the same ID. This
+** was done for the OS_open, OS_creat, and all OS_*Create calls.
+** Revision 1.13 2007/04/03 09:54:36EDT njyanchik 
+** There were errors in the prologue information for OS_cp and OS_mv. These erros were fixed
+** Revision 1.12 2007/03/21 14:33:58EST njyanchik 
+** I had a bad way of dereferencing a pointer which caused a compile error in OS_FDGetInfo.
+** The error has been fixed in all OS's
+** Revision 1.11 2007/03/21 10:15:31EST njyanchik 
+** I mistakenly put the wrong length in for the path in the OS_FDTableEntry structure, and I added 
+** some code that will set and out of range file descriptors .IsValid flag to false in OS_FDGetInfo
+** Revision 1.10 2007/03/06 11:50:57EST njyanchik 
+** The function OS_FDGetInfo's parameters were backwards compared to the other OS*GetInfo
+** functions. Its parameters were changed to match the other functions
+** Revision 1.9 2007/02/28 14:57:46EST njyanchik 
+** The updates for supporting copying and moving files are now supported
+** Revision 1.8 2007/02/27 15:22:13EST njyanchik 
+** This CP has the initial import of the new file descripor table mechanism
+            
 */
 
 /****************************************************************************************
                                     INCLUDE FILES
 ****************************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <rtems.h>
-#include <rtems/shell.h>
+
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
+
+#include "sys/types.h"
+#include "fcntl.h"
+#include "unistd.h"
+#include "errno.h"
+#include "pthread.h"
+
+#include "dirent.h"
+#include "sys/stat.h"
 
 #include "common_types.h"
 #include "osapi.h"
@@ -97,39 +58,24 @@
                                      DEFINES
 ****************************************************************************************/
 
-#define ERROR                        -1
-#define OS_REDIRECTSTRSIZE           15
-#define OS_SHELL_TMP_FILE_EXT        ".out"
-#define OS_SHELL_TMP_FILE_EXT_LEN    4 
-#define OS_SHELL_CMD_TASK_STACK_SIZE 16384
-#define OS_SHELL_CMD_TASK_PRIORITY   200
-
-#define OSAL_TABLE_MUTEX_ATTRIBS \
- (RTEMS_PRIORITY | RTEMS_BINARY_SEMAPHORE | \
-  RTEMS_INHERIT_PRIORITY | RTEMS_NO_PRIORITY_CEILING | RTEMS_LOCAL)
-
-/***************************************************************************************
-                                 FUNCTION PROTOTYPES
-***************************************************************************************/
-
-int32 OS_check_name_length(const char *path);
-extern uint32 OS_FindCreator(void);
+# define ERROR -1
 
 /****************************************************************************************
                                    GLOBAL DATA
 ****************************************************************************************/
 
 OS_FDTableEntry OS_FDTable[OS_MAX_NUM_OPEN_FILES];
-rtems_id        OS_FDTableSem;
-rtems_id        OS_VolumeTableSem;
+int32 OS_check_name_length(const char *path);
+int32 OS_NameChange(char* name);
+extern uint32 OS_FindCreator(void);
+
+pthread_mutex_t OS_FDTableMutex;
 /****************************************************************************************
                                 INITIALIZATION FUNCTION
 ****************************************************************************************/
-int32 OS_FS_Init(void)
+void OS_FS_Init(void)
 {
-    int               i;
-    rtems_status_code rtems_sc;
-	
+    int i;
     /* Initialize the file system constructs */
     for (i =0; i < OS_MAX_NUM_OPEN_FILES; i++)
     {
@@ -138,32 +84,8 @@ int32 OS_FS_Init(void)
         OS_FDTable[i].User =       0;
         OS_FDTable[i].IsValid =    FALSE;
     }
-
-   /*
-   ** Initialize the FS subsystem semaphore
-   */
-   rtems_sc = rtems_semaphore_create (rtems_build_name ('M', 'U', 'T', 'F'),
-                                      1, OSAL_TABLE_MUTEX_ATTRIBS, 0,
-                                      &OS_FDTableSem);
-   if ( rtems_sc != RTEMS_SUCCESSFUL )
-   {
-      return(OS_ERROR);
-   }
-
-   /*
-   ** Initialize the RTEMS system call lock semaphore 
-   */
-   rtems_sc = rtems_semaphore_create (rtems_build_name ('V', 'O', 'L', 'T'),
-                                      1, OSAL_TABLE_MUTEX_ATTRIBS, 0,
-                                      &OS_VolumeTableSem);
-   if ( rtems_sc != RTEMS_SUCCESSFUL )
-   {
-      return(OS_ERROR);
-   }
-
-
-   return(OS_SUCCESS);
-
+    
+    pthread_mutex_init((pthread_mutex_t *) & OS_FDTableMutex,NULL); 
 
 }
 /****************************************************************************************
@@ -181,60 +103,43 @@ int32 OS_FS_Init(void)
              permissions by access. The file is also automatically opened by the
              create call.
     
-    Returns: OS_FS_ERR_INVALID_POINTER if path is NULL
-             OS_FS_ERR_PATH_TOO_LONG if path exceeds the maximum number of chars
+    Returns: OS_FS_INVALID_POINTER if path is NULL
+             OS_FS_PATH_TOO_LONG if path exceeds the maximum number of chars
              OS_FS_ERR_PATH_INVALID if path cannot be parsed
              OS_FS_ERR_NAME_TOO_LONG if the name of the file is too long
              OS_FS_ERROR if permissions are unknown or OS call fails
-             OS_FS_ERR_NO_FREE_FDS if there are no free file descripors left
-             File Descriptor is returned on success. 
+             OS_FS_ERR_NO_FREE_FS if there are no free file descripors left
+             OS_FS_SUCCESS if success
     
 ---------------------------------------------------------------------------------------*/
 
 int32 OS_creat  (const char *path, int32  access)
 {
-    int               status;
-    rtems_status_code rtems_sc;
-    char              local_path[OS_MAX_LOCAL_PATH_LEN];
-    int               perm;
-    mode_t            mode;
-    uint32            PossibleFD;
+    int status;
+    char local_path[OS_MAX_PATH_LEN];
+    int perm;
+    mode_t mode;
+    uint32 PossibleFD;
 
-    /*
-    ** Check to see if the path pointer is NULL
-    */
     if (path == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
    
-    /*
-    ** Check to see if the path is too long
-    */
     if (strlen(path) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
-
-    /* 
-    ** check if the name of the file is too long 
-    */
-    if (OS_check_name_length(path) != OS_FS_SUCCESS)
-    {
-        return OS_FS_ERR_NAME_TOO_LONG;
-    }
- 
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(path, (char *)local_path) != OS_FS_SUCCESS )
+   
+    /* make a local copy of the path */
+    strcpy(local_path, path);
+    if(OS_NameChange(local_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
-  
-    
-    /* Check Parameters */
-    rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+
+
+    /* check if the name of the file is too long */
+    if (OS_check_name_length(local_path) != OS_FS_SUCCESS)
+        return OS_FS_ERR_NAME_TOO_LONG;
+
+    pthread_mutex_lock(&OS_FDTableMutex);
 
     for ( PossibleFD = 0; PossibleFD < OS_MAX_NUM_OPEN_FILES; PossibleFD++)
     {
@@ -246,19 +151,17 @@ int32 OS_creat  (const char *path, int32  access)
 
     if (PossibleFD >= OS_MAX_NUM_OPEN_FILES)
     {
-        rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+        pthread_mutex_unlock(&OS_FDTableMutex);
+
         return OS_FS_ERR_NO_FREE_FDS;
     }
 
+    /* Mark the table entry as valid so no other 
+     * task can take that ID */
+    OS_FDTable[PossibleFD].IsValid = TRUE;
 
-    /* 
-    ** Mark the table entry as valid so no other 
-    ** task can take that ID 
-    */
-    OS_FDTable[PossibleFD].IsValid =    TRUE;
+    pthread_mutex_unlock(&OS_FDTableMutex);
 
-    rtems_sc = rtems_semaphore_release (OS_FDTableSem);
-    
     switch(access)
     {
         case OS_READ_ONLY:
@@ -276,24 +179,25 @@ int32 OS_creat  (const char *path, int32  access)
 
     mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
    
-    status =  open(local_path, perm | O_CREAT | O_TRUNC , mode); 
+    status =  open(local_path, perm | O_CREAT, mode);
+
+    pthread_mutex_lock(&OS_FDTableMutex);
 
     if (status != ERROR)
     {
-        rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         /* fill in the table before returning */
         OS_FDTable[PossibleFD].OSfd =       status;
-        strncpy(OS_FDTable[PossibleFD].Path, path, OS_MAX_PATH_LEN);
+        strncpy(OS_FDTable[PossibleFD].Path, path, OS_MAX_API_NAME);
         OS_FDTable[PossibleFD].User =       OS_FindCreator();
-        rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+        pthread_mutex_unlock(&OS_FDTableMutex);
+        
         return PossibleFD;
     }
     else
     {
-        rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         /* Operation failed, so reset to false */
         OS_FDTable[PossibleFD].IsValid = FALSE;
-        rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+        pthread_mutex_unlock(&OS_FDTableMutex);
         return OS_FS_ERROR;
     }
  
@@ -305,8 +209,8 @@ int32 OS_creat  (const char *path, int32  access)
     Purpose: Opens a file. access parameters are OS_READ_ONLY,OS_WRITE_ONLY, or 
              OS_READ_WRITE
 
-    Returns: OS_FS_ERR_INVALID_POINTER if path is NULL
-             OS_FS_ERR_PATH_TOO_LONG if path exceeds the maximum number of chars
+    Returns: OS_FS_INVALID_POINTER if path is NULL
+             OS_FS_PATH_TOO_LONG if path exceeds the maximum number of chars
              OS_FS_ERR_PATH_INVALID if path cannot be parsed
              OS_FS_ERR_NAME_TOO_LONG if the name of the file is too long
              OS_FS_ERROR if permissions are unknown or OS call fails
@@ -316,45 +220,32 @@ int32 OS_creat  (const char *path, int32  access)
 
 int32 OS_open   (const char *path,  int32 access,  uint32  mode)
 {
-    int               status;
-    rtems_status_code rtems_sc;
-    char              local_path[OS_MAX_LOCAL_PATH_LEN];
-    int               perm;
-    uint32            PossibleFD;
+    int status;
+    char local_path[OS_MAX_PATH_LEN];
+    int perm;
+    uint32 PossibleFD;
     
-    /*
-    ** Check to see if the path pointer is NULL
-    */
-    if (path == NULL)
-    {
-        return OS_FS_ERR_INVALID_POINTER;
-    }
-   
-    /*
-    ** Check to see if the path is too long
-    */
-    if (strlen(path) >= OS_MAX_PATH_LEN)
-    {
-        return OS_FS_ERR_PATH_TOO_LONG;
-    }
+    
+    if(path == NULL)
+       return OS_FS_ERR_INVALID_POINTER;
 
-    /* 
-    ** check if the name of the file is too long 
-    */
-    if (OS_check_name_length(path) != OS_FS_SUCCESS)
-    {
-        return OS_FS_ERR_NAME_TOO_LONG;
-    }
+    if (strlen(path) >= OS_MAX_PATH_LEN)
+        return OS_FS_ERR_PATH_TOO_LONG;
    
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(path, (char *)local_path) != OS_FS_SUCCESS )
+    /* make a local copy of the path */
+    strcpy(local_path, path);
+    if(OS_NameChange(local_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
+
+
     
-   rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    /* check if the name of the file is too long */
+    if (OS_check_name_length(local_path) == OS_FS_ERROR)
+        return OS_FS_ERR_NAME_TOO_LONG;
+    
+    pthread_mutex_lock(&OS_FDTableMutex);
 
     for ( PossibleFD = 0; PossibleFD < OS_MAX_NUM_OPEN_FILES; PossibleFD++)
     {
@@ -367,17 +258,16 @@ int32 OS_open   (const char *path,  int32 access,  uint32  mode)
 
     if (PossibleFD >= OS_MAX_NUM_OPEN_FILES)
     {
-        rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+        pthread_mutex_unlock(&OS_FDTableMutex);
+
         return OS_FS_ERR_NO_FREE_FDS;
     }
 
-    /* 
-    ** Mark the table entry as valid so no other 
-    ** task can take that ID 
-    */
+    /* Mark the table entry as valid so no other 
+     * task can take that ID */
     OS_FDTable[PossibleFD].IsValid = TRUE;
 
-    rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+    pthread_mutex_unlock(&OS_FDTableMutex);
 
     switch(access)
     {
@@ -398,24 +288,23 @@ int32 OS_open   (const char *path,  int32 access,  uint32  mode)
 
     status =  open(local_path,perm);
 
+    pthread_mutex_lock(&OS_FDTableMutex);
 
     if (status != ERROR)
     {
-        rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         /* fill in the table before returning */
         OS_FDTable[PossibleFD].OSfd =       status;
-        strncpy(OS_FDTable[PossibleFD].Path, path, OS_MAX_PATH_LEN);
+        strncpy(OS_FDTable[PossibleFD].Path, path, OS_MAX_API_NAME);
         OS_FDTable[PossibleFD].User =       OS_FindCreator();
-        rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+        pthread_mutex_unlock(&OS_FDTableMutex);
         
         return PossibleFD;
     }
     else
     {
-        rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         /* Operation failed, so reset to false */
         OS_FDTable[PossibleFD].IsValid = FALSE;
-        rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+        pthread_mutex_unlock(&OS_FDTableMutex);
         return OS_FS_ERROR;
     }
  
@@ -434,8 +323,7 @@ int32 OS_open   (const char *path,  int32 access,  uint32  mode)
 
 int32 OS_close (int32  filedes)
 {
-    int               status;
-    rtems_status_code rtems_sc;
+    int status;
 
     /* Make sure the file descriptor is legit before using it */
     if (filedes < 0 || filedes >= OS_MAX_NUM_OPEN_FILES || OS_FDTable[filedes].IsValid == FALSE)
@@ -447,35 +335,17 @@ int32 OS_close (int32  filedes)
         status = close ((int) OS_FDTable[filedes].OSfd);
         if (status == ERROR)
         {
-            /*
-            ** First, try one more time to close the file
-            ** In case it was an interrupted system call
-            */
-            status = close ((int) OS_FDTable[filedes].OSfd);
-
-            /*
-            ** Next, remove the file from the OSAL list
-            ** to free up that slot 
-            */
-            /* fill in the table before returning */
-            rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-            OS_FDTable[filedes].OSfd =       -1;
-            strcpy(OS_FDTable[filedes].Path, "\0");
-            OS_FDTable[filedes].User =       0;
-            OS_FDTable[filedes].IsValid =    FALSE;
-            rtems_sc = rtems_semaphore_release (OS_FDTableSem);
-
             return OS_FS_ERROR;
         }
         else
         {
             /* fill in the table before returning */
-            rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+            pthread_mutex_lock(&OS_FDTableMutex);
             OS_FDTable[filedes].OSfd =       -1;
             strcpy(OS_FDTable[filedes].Path, "\0");
             OS_FDTable[filedes].User =       0;
             OS_FDTable[filedes].IsValid =    FALSE;
-            rtems_sc = rtems_semaphore_release (OS_FDTableSem);
+            pthread_mutex_unlock(&OS_FDTableMutex);
             
             return OS_FS_SUCCESS;
         }
@@ -499,9 +369,7 @@ int32 OS_read  (int32  filedes, void *buffer, uint32 nbytes)
     int32 status;
 
     if (buffer == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
     /* Make sure the file descriptor is legit before using it */
     if (filedes < 0 || filedes >= OS_MAX_NUM_OPEN_FILES || OS_FDTable[filedes].IsValid == FALSE)
@@ -511,10 +379,9 @@ int32 OS_read  (int32  filedes, void *buffer, uint32 nbytes)
     else
     { 
         status = read (OS_FDTable[filedes].OSfd, buffer, nbytes);
+ 
         if (status == ERROR)
-        {
             return OS_FS_ERROR;
-        }
     }
 
     return status;
@@ -527,7 +394,7 @@ int32 OS_read  (int32  filedes, void *buffer, uint32 nbytes)
     Purpose: writes to a file. copies up to a maximum of nbtyes of buffer to the file
              described in filedes
 
-    Returns: OS_FS_ERR_INVALID_POINTER if buffer is NULL
+    Returns: OS_FS_INVALID_POINTER if buffer is NULL
              OS_FS_ERROR if OS call failed
              OS_FS_ERR_INVALID_FD if the file descriptor passed in is invalid
              number of bytes written if success
@@ -538,9 +405,7 @@ int32 OS_write (int32  filedes, void *buffer, uint32 nbytes)
     int32 status;
 
     if (buffer == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
     /* Make sure the file descriptor is legit before using it */
     if (filedes < 0 || filedes >= OS_MAX_NUM_OPEN_FILES || OS_FDTable[filedes].IsValid == FALSE)
@@ -552,16 +417,13 @@ int32 OS_write (int32  filedes, void *buffer, uint32 nbytes)
         status = write(OS_FDTable[filedes].OSfd, buffer, nbytes );
     
         if (status != ERROR)
-        {
             return  status;
-        }
         else
-        {
             return OS_FS_ERROR;
-        }
     }
     
 }/* end OS_write */
+
 
 /*--------------------------------------------------------------------------------------
     Name: OS_chmod
@@ -592,41 +454,31 @@ int32 OS_chmod  (const char *path, uint32 access)
 int32 OS_stat   (const char *path, os_fstat_t  *filestats)
 {
     int ret_val;
-    char local_path[OS_MAX_LOCAL_PATH_LEN];
-  
-    /*
-    ** Check to see if the file pointers are NULL
-    */
+    char local_path[OS_MAX_PATH_LEN];
+    
     if (path == NULL || filestats == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
-        
-    /*
-    ** Check to see if the path is too long
-    */
+
     if (strlen(path) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
    
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(path, (char *)local_path) != OS_FS_SUCCESS )
+    /* make a local copy of the path */
+    strcpy(local_path, path);
+    if(OS_NameChange(local_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
 
+    
+    /* check if the name of the file is too long */
+    if (OS_check_name_length(local_path) == OS_FS_ERROR)
+        return OS_FS_ERROR;
+
     ret_val = stat( (char*) local_path, filestats);
     if (ret_val == ERROR)
-    {
         return OS_FS_ERROR;
-    }
     else
-    {
         return OS_FS_SUCCESS;
-    }
     
 } /* end OS_stat */
 
@@ -640,6 +492,7 @@ int32 OS_stat   (const char *path, os_fstat_t  *filestats)
              OS_FS_ERR_INVALID_FD if the file descriptor passed in is invalid
              OS_FS_ERROR if OS call failed
 ---------------------------------------------------------------------------------------*/
+
 
 int32 OS_lseek  (int32  filedes, int32 offset, uint32 whence)
 {
@@ -672,13 +525,9 @@ int32 OS_lseek  (int32  filedes, int32 offset, uint32 whence)
         status = lseek( OS_FDTable[filedes].OSfd, (off_t) offset, (int) where );
 
         if ( (int) status != ERROR)
-        {
             return (int32) status;
-        }
         else
-        {
             return OS_FS_ERROR;
-        }
     }
  
 }/* end OS_lseek */
@@ -699,53 +548,32 @@ int32 OS_lseek  (int32  filedes, int32 offset, uint32 whence)
 
 int32 OS_remove (const char *path)
 {
-    int  status;
-    char local_path[OS_MAX_LOCAL_PATH_LEN];
-
-    /*
-    ** Check to see if the path pointer is NULL
-    */
+    int status;
+    char local_path[OS_MAX_PATH_LEN];
+    
     if (path == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
-   
-    /*
-    ** Check to see if the path is too long
-    */
-    if (strlen(path) >= OS_MAX_PATH_LEN)
-    {
-        return OS_FS_ERR_PATH_TOO_LONG;
-    }
 
-    /* 
-    ** check if the name of the file is too long 
-    */
-    if (OS_check_name_length(path) != OS_FS_SUCCESS)
-    {
-        return OS_FS_ERR_NAME_TOO_LONG;
-    }
+    if (strlen(path) >= OS_MAX_PATH_LEN)
+        return OS_FS_ERR_PATH_TOO_LONG;
    
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(path, (char *)local_path) != OS_FS_SUCCESS )
+    /* make a local copy of the path */
+    strcpy(local_path, path);
+    if(OS_NameChange(local_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
 
-    /*
-    ** Call the system to remove the file
-    */
+    
+    /* check if the name of the file is too long */
+    if (OS_check_name_length(local_path) == OS_FS_ERROR)
+        return OS_FS_ERR_NAME_TOO_LONG;
+
     status = remove (local_path);
     if (status != ERROR)
-    {
         return OS_FS_SUCCESS;
-    }
     else
-    {
         return OS_FS_ERROR;
-    }
     
 } /* end OS_remove */
 
@@ -756,85 +584,45 @@ int32 OS_remove (const char *path)
 
     Returns: OS_FS_SUCCESS if the rename works
              OS_FS_ERROR if the file could not be opened or renamed.
-             OS_FS_ERR_INVALID_POINTER if old_filename or new_filename are NULL
+             OS_FS_INVALID_POINTER if old or new are NULL
              OS_FS_ERR_PATH_INVALID if path cannot be parsed
              OS_FS_ERR_PATH_TOO_LONG if the paths given are too long to be stored locally
              OS_FS_ERR_NAME_TOO_LONG if the new name is too long to be stored locally
 ---------------------------------------------------------------------------------------*/
 
-int32 OS_rename (const char *old_filename, const char *new_filename)
+int32 OS_rename (const char *old, const char *new)
 {
-    int status,i;
-    char old_path[OS_MAX_LOCAL_PATH_LEN];
-    char new_path[OS_MAX_LOCAL_PATH_LEN];
-
-    /*
-    ** Check to see if the path pointers are NULL
-    */    
-    if (old_filename == NULL || new_filename == NULL)
-    {
-        return OS_FS_ERR_INVALID_POINTER;
-    }
-
-    /*
-    ** Check to see if the paths are too long
-    */
-    if (strlen(old_filename) >= OS_MAX_PATH_LEN)
-    {
-        return OS_FS_ERR_PATH_TOO_LONG;
-    }
+    int status;
+    char old_path[OS_MAX_PATH_LEN];
+    char new_path[OS_MAX_PATH_LEN];
     
-    if (strlen(new_filename) >= OS_MAX_PATH_LEN)
-    {
+    if (old == NULL || new == NULL)
+        return OS_FS_ERR_INVALID_POINTER;
+
+    if (strlen(old) >= OS_MAX_PATH_LEN)
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
+    
+    if (strlen(new) >= OS_MAX_PATH_LEN)
+        return OS_FS_ERR_PATH_TOO_LONG;
 
-    /* 
-    ** check if the names of the files are too long 
-    */
-    if (OS_check_name_length(old_filename) != OS_FS_SUCCESS)
+    /* make a local copy of the path */
+    strcpy(old_path, old);
+    strcpy(new_path, new);
+    if(OS_NameChange(old_path) != OS_FS_SUCCESS)
     {
-        return OS_FS_ERR_NAME_TOO_LONG;
+        return OS_FS_ERR_PATH_INVALID;
     }
-
-    if (OS_check_name_length(new_filename) != OS_FS_SUCCESS)
-    {
-        return OS_FS_ERR_NAME_TOO_LONG;
-    }
-
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(old_filename, (char *)old_path) != OS_FS_SUCCESS )
+    if(OS_NameChange(new_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
 
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(new_filename, (char *)new_path) != OS_FS_SUCCESS )
-    {
-        return OS_FS_ERR_PATH_INVALID;
-    }
      
-    status = rename (old_path, new_path);
-    if (status != ERROR)
-    {
-        for ( i =0; i < OS_MAX_NUM_OPEN_FILES; i++) 
-        {
-            if (strcmp(OS_FDTable[i].Path, old_filename) == 0 &&
-                OS_FDTable[i].IsValid == TRUE)
-            {
-                strncpy (OS_FDTable[i].Path, new_filename, OS_MAX_PATH_LEN);  
-            } 
-        }
-        return OS_FS_SUCCESS;
-    }
-    else
-    {
+     status = rename (old_path, new_path);
+     if (status != ERROR)
+         return OS_FS_SUCCESS;
+     else
          return OS_FS_ERROR;
-    }
      
 }/*end OS_rename */
 
@@ -845,7 +633,7 @@ int32 OS_rename (const char *old_filename, const char *new_filename)
 
     Returns: OS_FS_SUCCESS if the operation worked
              OS_FS_ERROR if the file could not be accessed
-             OS_FS_ERR_INVALID_POINTER if src or dest are NULL
+             OS_FS_INVALID_POINTER if src or dest are NULL
              OS_FS_ERR_PATH_INVALID if path cannot be parsed
              OS_FS_ERR_PATH_TOO_LONG if the paths given are too long to be stored locally
              OS_FS_ERR_NAME_TOO_LONG if the dest name is too long to be stored locally
@@ -854,99 +642,41 @@ int32 OS_rename (const char *old_filename, const char *new_filename)
 
 int32 OS_cp (const char *src, const char *dest)
 {
-    int  src_fd;
-    int  dest_fd;
-    char src_path[OS_MAX_LOCAL_PATH_LEN];
-    char dest_path[OS_MAX_LOCAL_PATH_LEN];
-    char data_buffer[512];
-    int  bytes_read;
-    int  bytes_written;
+    int status;
+    char src_path[OS_MAX_PATH_LEN];
+    char dest_path[OS_MAX_PATH_LEN];
 
-    /*
-    ** Check to see if the path pointers are NULL
-    */    
+    /* leavenough space for the two paths and the command */
+    char command [OS_MAX_PATH_LEN * 2 + 5];
+    
     if (src == NULL || dest == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
-    /*
-    ** Check to see if the paths are too long
-    */
     if (strlen(src) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
     
     if (strlen(dest) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
 
-    /* 
-    ** check if the names of the files are too long 
-    */
-    if (OS_check_name_length(src) != OS_FS_SUCCESS)
+    /* make a local copy of the path */
+    strcpy(src_path, src);
+    strcpy(dest_path, dest);
+    if(OS_NameChange(src_path) != OS_FS_SUCCESS)
     {
-        return OS_FS_ERR_NAME_TOO_LONG;
+        return OS_FS_ERR_PATH_INVALID;
     }
-
-    if (OS_check_name_length(dest) != OS_FS_SUCCESS)
-    {
-        return OS_FS_ERR_NAME_TOO_LONG;
-    }
-
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(src, (char *)src_path) != OS_FS_SUCCESS )
+    if(OS_NameChange(dest_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
 
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(dest, (char *)dest_path) != OS_FS_SUCCESS )
-    {
-        return OS_FS_ERR_PATH_INVALID;
-    }
-
-    /*
-    ** Do the copy
-    */
-    if((src_fd = open(src_path, O_RDONLY)) == -1) 
-    {
-       return OS_FS_ERR_PATH_INVALID;
-    }
-
-    if((dest_fd = open(dest_path, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1)
-    {
-       return OS_FS_ERR_PATH_INVALID;
-    }
- 
-    while((bytes_read = read(src_fd, data_buffer, sizeof(data_buffer))) > 0)
-    {
-       bytes_written = write(dest_fd, data_buffer, bytes_read);
-       if ( bytes_written < 0 )
-       {
-          close(src_fd);
-          close(dest_fd);
-          return OS_FS_ERROR;
-       }
-    }
-
-    close(src_fd);
-    close(dest_fd);
-
-    if ( bytes_read < 0 )
-    {
-       return OS_FS_ERROR;
-    }
-    else
-    {
-       return OS_FS_SUCCESS;
-    }
+    sprintf(command,"cp %s %s",src_path, dest_path);
+     
+     status = system(command);
+     if (status != ERROR)
+         return OS_FS_SUCCESS;
+     else
+         return OS_FS_ERROR;
      
 }/*end OS_cp */
 
@@ -955,90 +685,53 @@ int32 OS_cp (const char *src, const char *dest)
     
     Purpose: moves a single file from src to dest
 
-    Returns: OS_FS_SUCCESS if the rename works
-             OS_FS_ERROR if the file could not be opened or renamed.
-             OS_FS_ERR_INVALID_POINTER if src or dest are NULL
+    Returns: OS_FS_SUCCESS if the operation worked
+             OS_FS_ERROR if the file could not be accessed
+             OS_FS_INVALID_POINTER if src or dest are NULL
              OS_FS_ERR_PATH_INVALID if path cannot be parsed
              OS_FS_ERR_PATH_TOO_LONG if the paths given are too long to be stored locally
              OS_FS_ERR_NAME_TOO_LONG if the dest name is too long to be stored locally
+
 ---------------------------------------------------------------------------------------*/
 
 int32 OS_mv (const char *src, const char *dest)
 {
-    int status,i;
-    char src_path[OS_MAX_LOCAL_PATH_LEN];
-    char dest_path[OS_MAX_LOCAL_PATH_LEN];
+    int status;
+    char src_path[OS_MAX_PATH_LEN];
+    char dest_path[OS_MAX_PATH_LEN];
 
-    /*
-    ** Check to see if the path pointers are NULL
-    */    
+    /* leavenough space for the two paths and the command */
+    char command [OS_MAX_PATH_LEN * 2 + 5];
+    
     if (src == NULL || dest == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
-    /*
-    ** Check to see if the paths are too long
-    */
     if (strlen(src) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
     
     if (strlen(dest) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
 
-    /* 
-    ** check if the names of the files are too long 
-    */
-    if (OS_check_name_length(src) != OS_FS_SUCCESS)
+    /* make a local copy of the path */
+    strcpy(src_path, src);
+    strcpy(dest_path, dest);
+    if(OS_NameChange(src_path) != OS_FS_SUCCESS)
     {
-        return OS_FS_ERR_NAME_TOO_LONG;
+        return OS_FS_ERR_PATH_INVALID;
     }
-
-    if (OS_check_name_length(dest) != OS_FS_SUCCESS)
-    {
-        return OS_FS_ERR_NAME_TOO_LONG;
-    }
-
-
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(src, (char *)src_path) != OS_FS_SUCCESS )
+    if(OS_NameChange(dest_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
 
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(dest, (char *)dest_path) != OS_FS_SUCCESS )
-    {
-        return OS_FS_ERR_PATH_INVALID;
-    }
-
-
-    status = rename((const char*)src_path, (const char *)dest_path);
-
-    if (status != ERROR)
-    {
-        for ( i =0; i < OS_MAX_NUM_OPEN_FILES; i++) 
-        {
-            if (strcmp(OS_FDTable[i].Path, src) == 0 &&
-                OS_FDTable[i].IsValid == TRUE)
-            {
-                strncpy (OS_FDTable[i].Path, dest, OS_MAX_PATH_LEN);  
-            } 
-        }
-        return OS_FS_SUCCESS;
-    }
-    else
-    {
-        return OS_FS_ERROR;
-    }
+    sprintf(command,"mv %s %s",src_path, dest_path);
+     
+     status = system(command);
+     if (status != ERROR)
+         return OS_FS_SUCCESS;
+     else
+         return OS_FS_ERROR;
+     
 }/*end OS_mv */
 
 /*
@@ -1062,44 +755,29 @@ int32 OS_mkdir (const char *path, uint32 access)
 {
    int status;
    mode_t mode;
-   char local_path[OS_MAX_LOCAL_PATH_LEN];
+      char local_path[OS_MAX_PATH_LEN];
 
-    /*
-    ** Check to see if the path pointer is NULL
-    */    
     if (path == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
-    /*
-    ** Check to see if the path is too long
-    */      
+      
     if (strlen(path) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
-
-
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(path, (char *)local_path) != OS_FS_SUCCESS )
+   
+    /* make a local copy of the path */
+    strcpy(local_path, path);
+    if(OS_NameChange(local_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
-    
+
     mode = S_IFDIR |S_IRWXU | S_IRWXG | S_IRWXO;
     status = mkdir(local_path, mode);
 
     if (status != ERROR)
-    {
         return OS_FS_SUCCESS;
-    }
     else
-    {
         return OS_FS_ERROR;
-    }
     
 }/* end OS_mkdir */
 
@@ -1108,51 +786,39 @@ int32 OS_mkdir (const char *path, uint32 access)
 
     Purpose: opens a directory for searching
 
-    Returns: NULL if the directory cannot be opened
-             Directory pointer if the directory is opened
+    Returns: NULL if path is NULL,path is too long, OS call fails
+             a pointer to a directory if success
+             OS_FS_ERR_PATH_INVALID if path cannot be parsed
              
 ---------------------------------------------------------------------------------------*/
+
 
 os_dirp_t OS_opendir (const char *path)
 {
 
     os_dirp_t dirdescptr;
-    char local_path[OS_MAX_LOCAL_PATH_LEN];
-
-    /*
-    ** Check to see if the path pointer is NULL
-    */        
+    char local_path[OS_MAX_PATH_LEN];
+    
     if (path == NULL)
+        return NULL;
+
+    if (strlen(path) > OS_MAX_PATH_LEN)
+        return NULL;
+   
+    /* make a local copy of the path */
+    strcpy(local_path, path);
+    if(OS_NameChange(local_path) != OS_FS_SUCCESS)
     {
         return NULL;
     }
 
-    /*
-    ** Check to see if the path is too long
-    */      
-    if (strlen(path) > OS_MAX_PATH_LEN)
-    {
-        return NULL;
-    }
-   
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(path, (char *)local_path) != OS_FS_SUCCESS )
-    {
-        return NULL;
-    }
    
     dirdescptr = opendir( (char*) local_path);
     
     if (dirdescptr == NULL)
-    {
         return NULL;
-    }
     else
-    {
         return dirdescptr;
-    }
     
 } /* end OS_opendir */
 
@@ -1170,19 +836,13 @@ int32 OS_closedir (os_dirp_t directory)
     int status;
 
     if (directory == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
     status = closedir(directory);
     if (status != ERROR)
-    {
         return OS_FS_SUCCESS;
-    }
     else
-    {
         return OS_FS_ERROR;
-    }
 
 } /* end OS_closedir */
 
@@ -1201,38 +861,23 @@ os_dirent_t *  OS_readdir (os_dirp_t directory)
     os_dirent_t *tempptr;
 
     if (directory == NULL)
-    {
         return NULL;
-    }
 
     tempptr = readdir( directory);
     
     if (tempptr != NULL)
-    {
         return tempptr;
-    }
+
     else
-    {
-        return NULL;
-    }
-        
+        return NULL; 
+    
+
+    /* should never reach this point in the code */
+    return NULL;
+    
 } /* end OS_readdir */
 
-/*--------------------------------------------------------------------------------------
-    Name: OS_rewinddir
 
-    Purpose: Rewinds the directory pointer
-
-    Returns: N/A
----------------------------------------------------------------------------------------*/
-
-void  OS_rewinddir (os_dirp_t directory )
-{ 
-    if (directory != NULL)
-    {
-       rewinddir( directory);
-    }
-}
 /*--------------------------------------------------------------------------------------
     Name: OS_rmdir
     
@@ -1240,35 +885,23 @@ void  OS_rewinddir (os_dirp_t directory )
 
     Returns: OS_FS_ERR_INVALID_POINTER if path is NULL
              OS_FS_ERR_PATH_INVALID if path cannot be parsed    
-             OS_FS_ERR_PATH_TOO_LONG
+             OS_FS_ER_PATH_TOO_LONG
 ---------------------------------------------------------------------------------------*/
+
 
 int32  OS_rmdir (const char *path)
 {
     int status;
-    char local_path [OS_MAX_LOCAL_PATH_LEN];
-
-    /*
-    ** Check to see if the path pointer is NULL
-    */            
+    char local_path [OS_MAX_PATH_LEN];
+    
     if (path == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
-    /*
-    ** Check to see if the path is too long
-    */      
     if (strlen(path) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
 
-
-    /*
-    ** Translate the path
-    */
-    if ( OS_TranslatePath(path, (char *)local_path) != OS_FS_SUCCESS )
+    strcpy(local_path,path);
+    if(OS_NameChange(local_path) != OS_FS_SUCCESS)
     {
         return OS_FS_ERR_PATH_INVALID;
     }
@@ -1276,18 +909,14 @@ int32  OS_rmdir (const char *path)
     status = rmdir(local_path);
     
     if (status != ERROR)
-    {
         return OS_FS_SUCCESS;
-    }
     else
-    {
         return OS_FS_ERROR;
-    }
     
 }/* end OS_rmdir */
 
 /* --------------------------------------------------------------------------------------
-    Name: OS_check_name_length
+    Name: OS_check_path_length
     
     Purpose: Checks the length of the file name at the end of the path.
     
@@ -1305,22 +934,15 @@ int32 OS_check_name_length(const char *path)
     int name_len;
     
     if (path == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
     
     if (strlen(path) > OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERROR;
-    }
-    
     /* checks to see if there is a '/' somewhere in the path */
     name_ptr = strrchr(path, '/');
     if (name_ptr == NULL)
-    {
         return OS_FS_ERROR;
-    }
     
     /* strrchr returns a pointer to the last '/' char, so we advance one char */
     name_ptr = name_ptr + sizeof(char);
@@ -1332,13 +954,11 @@ int32 OS_check_name_length(const char *path)
     name_len = ((int) end_of_path - (int)name_ptr) / sizeof(char);
     
     if( name_len > OS_MAX_FILE_NAME)
-    {
         return OS_FS_ERROR;
-    }
     
     return OS_FS_SUCCESS;
     
-}/* end OS_check_name_length */
+}/* end OS_check_path_length */
 /* --------------------------------------------------------------------------------------
     Name: OS_ShellOutputToFile
     
@@ -1350,109 +970,53 @@ int32 OS_check_name_length(const char *path)
  ---------------------------------------------------------------------------------------*/
 int32 OS_ShellOutputToFile(char* Cmd, int32 OS_fd)
 {
-    int32              cmdFd;
-    int32              tmpFd;
-    rtems_status_code  rtemsRc;;
-    int32              ReturnCode = OS_SUCCESS;
-    int32              fileStatus;
-    int32              bytesRead;
-    int32              bytesWritten;
-    char               readBuffer[256];
-    char               outputFileName[OS_MAX_PATH_LEN + OS_SHELL_TMP_FILE_EXT_LEN];
-    char               localCmd[OS_MAX_CMD_LEN]; 
+    
+    /* this is a #define to avoid a 'variable length array' warning */
+    /* 15 is for the size of the redirection string that is added 
+     * to the command */
+    #define OS_REDIRECTSTRSIZE 15
+    char LocalCmd [OS_MAX_CMD_LEN + OS_REDIRECTSTRSIZE]; 
+    char String [OS_REDIRECTSTRSIZE];
+    int32 ReturnCode;
+    int32 Result;
 
     /* Make sure the file descriptor is legit before using it */
     if (OS_fd < 0 || OS_fd >= OS_MAX_NUM_OPEN_FILES || OS_FDTable[OS_fd].IsValid == FALSE)
     {
-        ReturnCode = OS_FS_ERR_INVALID_FD;
+        return OS_FS_ERR_INVALID_FD;
     }
     else
     {
-        /* 
-        ** Create a file to write the command to (or write over the old one) 
+
+        strncpy(LocalCmd,Cmd,OS_MAX_CMD_LEN +OS_REDIRECTSTRSIZE);
+    
+        /* Make sure that we are able to access this file */
+        fchmod(OS_FDTable[OS_fd].OSfd,0777);
+  
+
+        /* add in the extra chars necessary to perform the redirection
+        1 for stdout and 2 for stderr. they are redirected to the 
+        file descriptor passed in
         */
-        cmdFd = OS_creat(OS_SHELL_CMD_INPUT_FILE_NAME,OS_READ_WRITE);
-        if (cmdFd < OS_FS_SUCCESS)
+        sprintf(String, " 1>&%d 2>&%d",(int)OS_FDTable[OS_fd].OSfd, (int)OS_FDTable[OS_fd].OSfd);
+        strcat(LocalCmd, String);
+
+    
+        Result = system(LocalCmd);
+    
+        if (Result == 0)
         {
-            ReturnCode = OS_FS_ERROR;
+            ReturnCode = OS_SUCCESS;
         }
         else
         {
-            /*
-            ** Write the command to the buffer
-            */
-            strncpy(localCmd,Cmd,OS_MAX_CMD_LEN);
-            strncat(localCmd,"\n",1);
-
-            /*
-            ** This function passes in an open file descriptor to write the shell
-            **  command output. The RTEMS shell script API expects a filename, not
-            **  a file descriptor. So in addition to the temporary file for the shell input,
-            **  we need to create a temporary file for the command output, then it has
-            **  to be copied to the open file.  
-            */
-            strncpy(outputFileName,OS_SHELL_CMD_INPUT_FILE_NAME,OS_MAX_PATH_LEN);           
-            strncat(outputFileName,OS_SHELL_TMP_FILE_EXT,OS_SHELL_TMP_FILE_EXT_LEN);
-
-            /* 
-            ** copy the shell command buffer to the file 
-            */
-            fileStatus = OS_write(cmdFd, localCmd, strlen(localCmd));
-            if ( fileStatus == strlen(localCmd) )
-            {
-               /*
-               ** Close the file
-               */
-               OS_close(cmdFd);	
-
-               /*
-               ** Spawn a task to execute the shell command
-               */
-               rtemsRc =  rtems_shell_script ( 
-                         "RSHL", 
-                         OS_SHELL_CMD_TASK_STACK_SIZE, 
-                         OS_SHELL_CMD_TASK_PRIORITY, 
-                         OS_SHELL_CMD_INPUT_FILE_NAME,
-                         outputFileName,
-                         FALSE,       /* Do not append output to file */
-                         TRUE,        /* Wait for shell task to complete */
-                         FALSE        /* Echo output */ 
-                        );
-                
-               /*
-               ** Now we have the temporary file with the output 
-               */
-               if((tmpFd = OS_open(outputFileName, OS_READ_ONLY,0)) == OS_FS_ERROR)
-               {
-                  printf("OSAL:Could not open %s for reading\n",outputFileName);
-                  ReturnCode = OS_FS_ERROR; 
-               }
-               else
-               { 
-                  while((bytesRead = OS_read(tmpFd, readBuffer, 256)) > 0)
-                  {
-                     bytesWritten = OS_write(OS_fd, readBuffer, bytesRead);
-                  }
-                  OS_close(tmpFd);
-                  /*
-                  ** Remove the temporary output file
-                  */
-                  fileStatus = OS_remove(outputFileName); 
-               } 
-            }
-            else
-            {
-                 ReturnCode = OS_FS_ERROR;
-            }
-        } 
-        /*
-        ** Remove the temporary shell input file
-        */
-        fileStatus = OS_remove(OS_SHELL_CMD_INPUT_FILE_NAME); 
+            ReturnCode = OS_FS_ERROR;
+        }
+    
+        return ReturnCode;
     }
- 
-    return ReturnCode;
-
+    /* should never get here */
+    return OS_FS_ERROR;
 }/* end OS_ShellOutputToFile */
 
 /* --------------------------------------------------------------------------------------
@@ -1471,8 +1035,7 @@ int32 OS_FDGetInfo (int32 filedes, OS_FDTableEntry *fd_prop)
     {
         /* Makse sure user knows this is nota valid descriptor if he forgets to check the
          * return code */
-
-       (*(fd_prop)).IsValid = FALSE; 
+        (*(fd_prop)).IsValid = FALSE;
         return OS_FS_ERR_INVALID_FD;
     }
     else
@@ -1482,145 +1045,4 @@ int32 OS_FDGetInfo (int32 filedes, OS_FDTableEntry *fd_prop)
     }
 
 }/* end OS_FDGetInfo */
-
-/* --------------------------------------------------------------------------------------
-   Name: OS_FileOpenCheck
-    
-   Purpose: Checks to see if a file is open 
-    
-   Returns: OS_FS_ERROR if the file is not open 
-            OS_FS_SUCCESS if the file is open 
- ---------------------------------------------------------------------------------------*/
-int32 OS_FileOpenCheck(char *Filename)
-{
-    rtems_status_code rtems_sc;
-    uint32            i;
-
-    if (Filename == NULL)
-    {
-        return(OS_FS_ERR_INVALID_POINTER);
-    }
-
-    rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
-    for ( i = 0; i < OS_MAX_NUM_OPEN_FILES; i++)
-    {
-        if ((OS_FDTable[i].IsValid == TRUE) &&  (strcmp(OS_FDTable[i].Path, Filename) == 0))
-        {
-           rtems_sc = rtems_semaphore_release (OS_FDTableSem);
-           return(OS_FS_SUCCESS);
-        }
-    }/* end for */
-
-    rtems_sc = rtems_semaphore_release (OS_FDTableSem);
-    return OS_FS_ERROR;
-
-}/* end OS_FileOpenCheck */
-
-/* --------------------------------------------------------------------------------------
-   Name: OS_CloseFileByName
-
-   Purpose: Allows a file to be closed by name.
-            This will only work if the name passed in is the same name used to open 
-            the file.
-
-   Returns: OS_FS_ERR_PATH_INVALID if the file is not found 
-            OS_FS_ERROR   if the file close returned an error
-            OS_FS_SUCCESS if the file close suceeded  
- ---------------------------------------------------------------------------------------*/
-int32 OS_CloseFileByName(char *Filename)
-{
-    rtems_status_code rtems_sc;
-    uint32            i;
-    int               status;
-
-    if (Filename == NULL)
-    {
-        return(OS_FS_ERR_INVALID_POINTER);
-    }
-
-    rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
-    for ( i = 0; i < OS_MAX_NUM_OPEN_FILES; i++)
-    {
-        if ((OS_FDTable[i].IsValid == TRUE) &&  (strcmp(OS_FDTable[i].Path, Filename) == 0))
-        {
-           /*
-           ** Close the file
-           */
-           status = close ((int) OS_FDTable[i].OSfd);
-
-           /*
-           ** Next, remove the file from the OSAL list
-           ** to free up that slot
-           */
-           OS_FDTable[i].OSfd =       -1;
-           strcpy(OS_FDTable[i].Path, "\0");
-           OS_FDTable[i].User =       0;
-           OS_FDTable[i].IsValid =    FALSE;
-           rtems_sc = rtems_semaphore_release (OS_FDTableSem);
-
-           if (status == ERROR)
-           {
-              return(OS_FS_ERROR);
-           }
-           else
-           {
-              return(OS_FS_SUCCESS);
-           }
-        }
-
-    }/* end for */
-
-    rtems_sc = rtems_semaphore_release (OS_FDTableSem);
-    return (OS_FS_ERR_PATH_INVALID);
-
-}/* end OS_CloseFileByName */
-
-/* --------------------------------------------------------------------------------------
-   Name: OS_CloseAllFiles
-
-   Purpose: Closes All open files that were opened through the OSAL 
-
-   Returns: OS_FS_ERROR   if one or more file close returned an error
-            OS_FS_SUCCESS if the files were all closed without error
- ---------------------------------------------------------------------------------------*/
-int32 OS_CloseAllFiles(void)
-{
-    rtems_status_code rtems_sc;
-    uint32            i;
-    int32             return_status = OS_FS_SUCCESS;
-    int               status;
-    
-    rtems_sc = rtems_semaphore_obtain (OS_FDTableSem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
-    for ( i = 0; i < OS_MAX_NUM_OPEN_FILES; i++)
-    {
-        if ( OS_FDTable[i].IsValid == TRUE )
-        {
-           /*
-           ** Close the file
-           */
-           status = close ((int) OS_FDTable[i].OSfd);
-
-           /*
-           ** Next, remove the file from the OSAL list
-           ** to free up that slot
-           */
-           OS_FDTable[i].OSfd =       -1;
-           strcpy(OS_FDTable[i].Path, "\0");
-           OS_FDTable[i].User =       0;
-           OS_FDTable[i].IsValid =    FALSE;
-           if (status == ERROR)
-           {
-              return_status = OS_FS_ERROR;
-           }
-        }
-
-    }/* end for */
-
-    rtems_sc = rtems_semaphore_release (OS_FDTableSem);
-    return (return_status);
-
-}/* end OS_CloseAllFiles */
 

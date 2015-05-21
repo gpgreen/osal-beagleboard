@@ -1,44 +1,13 @@
 /*
 ** File   : osfilesys.c
-**
-**      Copyright (c) 2004-2006, United States government as represented by the 
-**      administrator of the National Aeronautics Space Administration.  
-**      All rights reserved. This software was created at NASAs Goddard 
-**      Space Flight Center pursuant to government contracts.
-**
-**      This is governed by the NASA Open Source Agreement and may be used, 
-**      distributed and modified only pursuant to the terms of that agreement.
-**
+
 ** Author : Nicholas Yanchik / NASA GSFC Code 582.0
-**
+
 ** Purpose: This file has the api's for all of the making
-**          and mounting type of calls for file systems
-**
-** $Date: 2011/06/27 15:52:34EDT $
-** $Revision: 1.10 $
+            and mounting type of calls for file systems
+** $Date: 2007/10/16 16:15:01EDT $
+** $Revision: 1.1 $
 ** $Log: osfilesys.c  $
-** Revision 1.10 2011/06/27 15:52:34EDT acudmore 
-** Went over APIs and Documentation for return code consistency.
-** Updated documentation, function comments, and return codes as needed.
-** Revision 1.9 2011/04/05 12:51:56EDT acudmore 
-** Use xbdBlkDevSync instead of xbdBlkDev and a hardcoded task delay
-** Revision 1.8 2010/11/12 12:37:32EST acudmore 
-** Updated error return values in comments.
-** Revision 1.7 2010/11/12 12:03:10EST acudmore 
-** replaced copyright symbol with (c) and added open source notice where needed.
-** Revision 1.6 2010/02/02 12:14:27EST acudmore 
-** Added name length checks
-** Revision 1.5 2010/02/01 12:29:35EST acudmore 
-** Added OS_fsBytesFree API
-** Revision 1.4 2009/07/23 13:52:45EDT acudmore 
-** Fixed OS_fsBlocksFree when it checked a full volume. Also added close statements so it would not keep a file open.
-** Revision 1.3 2009/07/16 13:02:43EDT acudmore 
-** Fixed Warnings found by ARC.
-** Revision 1.2 2009/07/14 16:08:43EDT acudmore 
-** Updated vxWorks port with OS_TranslatePath API
-** Revision 1.1 2008/04/20 22:36:13EDT ruperera 
-** Initial revision
-** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-OSAL-REPOSITORY/src/os/vxworks6/project.pj
 ** Revision 1.1 2007/10/16 16:15:01EDT apcudmore 
 ** Initial revision
 ** Member added to project d:/mksdata/MKS-OSAL-REPOSITORY/src/os/vxworks6/project.pj
@@ -84,6 +53,7 @@
 #include "osapi.h"
 
 int32 OS_check_name_length(const char *path);
+int32 OS_NameChange(char* name);
 int32 OS_GetPhysDeviceName(char *PhysDevName, char *LocalVolname);
 /****************************************************************************************
                                    GLOBAL DATA
@@ -107,8 +77,7 @@ extern OS_VolumeInfo_t OS_VolumeTable [NUM_TABLE_ENTRIES];
     Purpose: Makes a file systm on the target 
     
     Returns: OS_FS_ERR_INVALID_POINTER if devname is NULL
-             OS_FS_ERR_DRIVE_NOT_CREATED if the OS calls to create the the drive failed
-             OS_FS_ERR_DEVICE_NOT_FREE if the volume table is full
+             OS_FS_DRIVE_NOT_CREATED if the OS calls to create the the drive failed
              OS_FS_SUCCESS on creating the disk
 
     Note: if address == 0, then a malloc will be called to create the disk
@@ -129,9 +98,7 @@ int32 OS_mkfs (char *address, char *devname, char *volname, uint32 blocksize,
 #endif
     
     if ( devname == NULL || volname == NULL )
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
     /* 
     ** Find an open entry in the Volume Table 
@@ -144,9 +111,7 @@ int32 OS_mkfs (char *address, char *devname, char *volname, uint32 blocksize,
     }
 
     if (i >= NUM_TABLE_ENTRIES)
-    {
         return OS_FS_ERR_DEVICE_NOT_FREE;
-    }
     
     /* 
     ** Now enter the info in the table 
@@ -177,7 +142,7 @@ int32 OS_mkfs (char *address, char *devname, char *volname, uint32 blocksize,
         /*
         ** Connect the ram drive to the xbd block device 
         */
-        xbd = xbdBlkDevCreateSync(ramDev,local_volname);
+        xbd = xbdBlkDevCreate(ramDev,local_volname);
         if (xbd == NULLDEV)
         {
             ReturnCode = OS_FS_ERR_DRIVE_NOT_CREATED;
@@ -185,9 +150,14 @@ int32 OS_mkfs (char *address, char *devname, char *volname, uint32 blocksize,
         else
         {
            /*
+           ** Delay to allow the XBD operation to complete
+           */
+           (void) taskDelay(100);
+          
+           /*
            ** Determine the vxWorks device name and store it 
            ** in the Physical Device field of the volume table.
-           ** It will be used for determining the path in OS_NameChange/OS_TranslatePath
+           ** It will be used for determining the path in OS_NameChange
            */
            strcat(local_volname,":0");
            strncpy(OS_VolumeTable[i].PhysDevName, local_volname, 32 );
@@ -248,7 +218,7 @@ int32 OS_mkfs (char *address, char *devname, char *volname, uint32 blocksize,
            /*
            **  Attach to the XBD layer 
            */
-           xbd = xbdBlkDevCreateSync(ataBlkDev,local_volname);
+           xbd = xbdBlkDevCreate(ataBlkDev,local_volname);
            if (xbd == NULLDEV)
            {
                printf("OSAL: Error Creating XBD device on FLASH disk.\n");
@@ -257,9 +227,14 @@ int32 OS_mkfs (char *address, char *devname, char *volname, uint32 blocksize,
            else
            {
               /*
+              ** Delay to allow the XBD operation to complete
+              */
+              (void) taskDelay(100);
+
+              /*
               ** Determine the vxWorks device name and store it 
               ** in the Physical Device field of the volume table.
-              ** It will be used for determining the path in OS_NameChange/OS_TranslatePath
+              ** It will be used for determining the path in OS_NameChange
               */
               status = OS_GetPhysDeviceName(OS_VolumeTable[i].PhysDevName, local_volname);
               if ( status == OS_FS_ERROR )
@@ -357,9 +332,7 @@ int32 OS_rmfs (char *devname)
              either the RAM, EEPROM, or FLASH drives.
     
     Returns: OS_FS_ERR_INVALID_POINTER if devname is NULL
-             OS_FS_ERR_DRIVE_NOT_CREATED if the OS calls to create the the drive failed
-             OS_FS_ERR_PATH_TOO_LONG if the name is too long
-             OS_FS_ERR_DEVICE_NOT_FREE if the volume table is full
+             OS_FS_DRIVE_NOT_CREATED if the OS calls to create the the drive failed
              OS_FS_SUCCESS on creating the disk
 
     Note: if address == 0, then a malloc will be called to create the disk
@@ -379,9 +352,7 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
 #endif
     
     if ( devname == NULL || volname == NULL )
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
     if(strlen(devname) > 32 || strlen(volname) > 30) /* 32 - 2 for ':0' in vxworks6 port */
     {
@@ -400,9 +371,7 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
     }
 
     if (i >= NUM_TABLE_ENTRIES)
-    {
         return OS_FS_ERR_DEVICE_NOT_FREE;
-    }
     
     /* 
     ** Now enter the info in the table 
@@ -433,7 +402,7 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
         /*
         ** Connect the ram drive to the xbd block device 
         */
-        xbd = xbdBlkDevCreateSync(ramDev,local_volname);
+        xbd = xbdBlkDevCreate(ramDev,local_volname);
         if (xbd == NULLDEV)
         {
             ReturnCode = OS_FS_ERR_DRIVE_NOT_CREATED;
@@ -441,9 +410,14 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
         else
         {
            /*
+           ** Delay to allow the XBD operation to complete
+           */
+           (void) taskDelay(100);
+
+           /*
            ** Determine the vxWorks device name and store it 
            ** in the Physical Device field of the volume table.
-           ** It will be used for determining the path in OS_NameChange/OS_TranslatePath
+           ** It will be used for determining the path in OS_NameChange
            */
            strcat(local_volname,":0");
            strncpy(OS_VolumeTable[i].PhysDevName, local_volname, 32 );
@@ -496,7 +470,7 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
            /*
            **  Attach to the XBD layer 
            */
-           xbd = xbdBlkDevCreateSync(ataBlkDev,local_volname);
+           xbd = xbdBlkDevCreate(ataBlkDev,local_volname);
            if (xbd == NULLDEV)
            {
                printf("OSAL: Error Creating XBD device on ATA/FLASH disk.\n");
@@ -505,9 +479,14 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
            else
            {
               /*
+              ** Delay to allow the XBD operation to complete
+              */
+              (void) taskDelay(100);
+
+              /*
               ** Determine the vxWorks device name and store it 
               ** in the Physical Device field of the volume table.
-              ** It will be used for determining the path in OS_NameChange/OS_TranslatePath
+              ** It will be used for determining the path in OS_NameChange
               */
               status = OS_GetPhysDeviceName(OS_VolumeTable[i].PhysDevName, local_volname);
               if ( status == OS_FS_ERROR )
@@ -531,7 +510,7 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
         /* 
         ** VolumeType is something else that is not supported right now 
         */
-        ReturnCode = OS_FS_ERR_DRIVE_NOT_CREATED;
+        ReturnCode = OS_FS_ERROR;
     }
     return ReturnCode;
 
@@ -547,13 +526,6 @@ int32 OS_initfs (char *address, char *devname, char *volname, uint32 blocksize,
 int32 OS_mount (const char *devname, char* mountpoint)
 {
    int i;
-
-    /* Check parameters */
-    if ( devname == NULL || mountpoint == NULL )
-    {
-        return OS_FS_ERR_INVALID_POINTER;
-    }
-
    /* find the device in the table */
     for (i = 0; i < NUM_TABLE_ENTRIES; i++)
     {
@@ -564,9 +536,7 @@ int32 OS_mount (const char *devname, char* mountpoint)
 
     /* make sure we found the device */
     if (i >= NUM_TABLE_ENTRIES)      
-    {
-        return OS_FS_ERROR;
-    }
+        return OS_FS_ERR_DRIVE_NOT_CREATED;
 
     /* attach the mountpoint */
     strcpy(OS_VolumeTable[i].MountPoint, mountpoint);
@@ -590,23 +560,20 @@ int32 OS_mount (const char *devname, char* mountpoint)
 int32 OS_unmount (const char* mountpoint)
 {
 
-    int    fd;
+    int fd;
     STATUS ret_status;
-    int32  osal_status;
-    char   local_path [OS_MAX_LOCAL_PATH_LEN];
-    int    i;
+    char local_path [OS_MAX_PATH_LEN];
+    int i;
 
     if (mountpoint == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
     if (strlen(mountpoint) >= OS_MAX_PATH_LEN)
-    {
         return OS_FS_ERR_PATH_TOO_LONG;
-    }
- 
-    osal_status = OS_TranslatePath(mountpoint, (char *)local_path);  
+   
+    /* make a local copy of the path */
+    strcpy(local_path, mountpoint);
+    OS_NameChange(local_path); 
     
     /* find the device in the table */
     for (i = 0; i < NUM_TABLE_ENTRIES; i++)
@@ -623,9 +590,7 @@ int32 OS_unmount (const char* mountpoint)
     fd = open(local_path,O_RDONLY,0);
     
     if (fd == ERROR)
-    {
         return OS_FS_ERROR;
-    }
 
     ret_status = ioctl( fd, FIOUNMOUNT,0);
 
@@ -647,9 +612,9 @@ int32 OS_unmount (const char* mountpoint)
 
     Purpose: Returns the number of free blocks in a volume
  
-    Returns: OS_FS_ERR_INVALID_POINTER if name is NULL
+    Returns: OS_FS_INVALID_POINTER if name is NULL
              OS_FS_ERROR if the OS call failed
-             The number of blocks free in a volume if success
+             The number of bytes free in a volume if success
 ---------------------------------------------------------------------------------------*/
 
 int32 OS_fsBlocksFree (const char *name)
@@ -657,30 +622,14 @@ int32 OS_fsBlocksFree (const char *name)
     int fd;
     int i;
     STATUS status;
-    uint64 free_bytes;
-    uint32 free_blocks; 
-    int32  osal_status;
-    char   local_path [OS_MAX_LOCAL_PATH_LEN];
+    uint32 free_bytes;
+    char local_path [OS_MAX_PATH_LEN];
 
-    /*
-    ** check for a NULL pointer
-    */
+
     if (name == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
-    /*
-    ** Check the length of the volume name
-    */
-    if ( strlen(name) >= OS_MAX_PATH_LEN )
-    {
-       return(OS_FS_ERR_PATH_TOO_LONG);
-    } 
 
-    /*
-    ** Search for the volume
-    */
     for (i = 0; i < NUM_TABLE_ENTRIES; i++)
     {
         if (OS_VolumeTable[i].FreeFlag == FALSE && OS_VolumeTable[i].IsMounted == TRUE
@@ -688,160 +637,25 @@ int32 OS_fsBlocksFree (const char *name)
             break;
     }
 
-    /*
-    **  make sure we found the device 
-    */
+    /* make sure we found the device */
     if (i >= NUM_TABLE_ENTRIES)
-    {
         return OS_FS_ERROR;
-    }
 
-    /*
-    ** get the local name
-    */
-    osal_status = OS_TranslatePath((const char *)name, (char *)local_path);
-  
-    /*
-    ** Try to open the file
-    */ 
+    
+    strcpy(local_path,name);
+    OS_NameChange(local_path);
+
     fd = open (local_path, O_RDONLY, 0);
     if (fd == ERROR)
-    {
-       if ( errnoGet() ==  ENOSPC )
-       {
-          /*
-          ** There is no space to even open the file, so return 0 blocks free.
-          */
-          return(0);
-       }
-       else
-       {
-          return OS_FS_ERROR;
-       }
-    }
-
-    /*
-    ** Find out how much space is available
-    */
-    status = ioctl(fd, FIONFREE64, (unsigned long ) &free_bytes);
-    if (status == ERROR)
-    {
-        close(fd);
         return OS_FS_ERROR;
-    }
 
-    /*
-    ** Close the file
-    */
-    close(fd);    
-
-    free_blocks = free_bytes / OS_VolumeTable[i].BlockSize;
- 
-    return(free_blocks);
-
+    status = ioctl(fd,FIONFREE, (unsigned long) &free_bytes);
+    if (status == ERROR)
+        return OS_FS_ERROR;
+    
+    return (free_bytes / OS_VolumeTable[i].BlockSize);
 }/* end OS_fsBlocksFree */
 
-/*--------------------------------------------------------------------------------------
-    Name: OS_fsBytesFree
-
-    Purpose: Returns the number of free bytes in a volume
- 
-    Returns: OS_FS_ERR_INVALID_POINTER if name is NULL
-             OS_FS_ERROR if the OS call failed
-             OS_SUCCESS if success
----------------------------------------------------------------------------------------*/
-
-int32 OS_fsBytesFree (const char *name, uint64 *bytes_free)
-{
-    int    fd;
-    int    i;
-    STATUS status;
-    uint64 bytes_free_local;
-    int32  osal_status;
-    char   local_path [OS_MAX_LOCAL_PATH_LEN];
-
-    /*
-    ** check for a NULL pointer
-    */
-    if (name == NULL || bytes_free == NULL)
-    {
-        return OS_FS_ERR_INVALID_POINTER;
-    }
-
-    /*
-    ** Check the length of the volume name
-    */
-    if ( strlen(name) >= OS_MAX_PATH_LEN )
-    {
-       return(OS_FS_ERR_PATH_TOO_LONG);
-    } 
-
-    /*
-    ** Search for the volume
-    */
-    for (i = 0; i < NUM_TABLE_ENTRIES; i++)
-    {
-        if (OS_VolumeTable[i].FreeFlag == FALSE && OS_VolumeTable[i].IsMounted == TRUE
-             && strcmp(OS_VolumeTable[i].MountPoint, name) == 0)
-            break;
-    }
-
-    /*
-    **  make sure we found the device 
-    */
-    if (i >= NUM_TABLE_ENTRIES)
-    {
-        return OS_FS_ERROR;
-    }
-
-    /*
-    ** get the local name
-    */
-    osal_status = OS_TranslatePath((const char *)name, (char *)local_path);
-  
-    /*
-    ** Try to open the file
-    */ 
-    fd = open (local_path, O_RDONLY, 0);
-    if (fd == ERROR)
-    {
-       if ( errnoGet() ==  ENOSPC )
-       {
-          /*
-          ** There is no space to even open the file, so return 0 blocks free.
-          */
-          *bytes_free = 0;
-          return OS_FS_SUCCESS;
-       }
-       else
-       {
-          return OS_FS_ERROR;
-       }
-    }
-
-    /*
-    ** Find out how much space is available
-    */
-    status = ioctl(fd, FIONFREE64, (unsigned long ) &bytes_free_local);
-    if (status == ERROR)
-    {
-        close(fd);
-        return OS_FS_ERROR;
-    }
-
-    /*
-    ** Close the file
-    */
-    close(fd);    
-
-    /*
-    ** Assign the free bytes value 
-    */
-    *bytes_free = bytes_free_local;
-
-    return (OS_FS_SUCCESS);
-    
-}
 /*--------------------------------------------------------------------------------------
     Name: OS_chkfs
     
@@ -855,33 +669,18 @@ int32 OS_fsBytesFree (const char *name, uint64 *bytes_free)
 os_fshealth_t OS_chkfs (const char *name, boolean repair)
 {  
     STATUS chk_status;
-    int32  osal_status;
-    int    fd;
-    char   local_path [OS_MAX_LOCAL_PATH_LEN];
+    int fd;
+    char local_path [OS_MAX_PATH_LEN];
 
-    /*
-    ** Check for a null pointer
-    */
     if (name == NULL)
-    {
         return OS_FS_ERR_INVALID_POINTER;
-    }
 
-    /*
-    ** Check the length of the volume name
-    */
-    if ( strlen(name) >= OS_MAX_PATH_LEN )
-    {
-       return(OS_FS_ERR_PATH_TOO_LONG);
-    } 
-
-    osal_status = OS_TranslatePath(name, (char *)local_path);
+    strcpy(local_path,name);
+    OS_NameChange(local_path);
 
     fd = open (local_path, O_RDONLY, 0);
     if (fd == ERROR)
-    {
         return OS_FS_ERROR;
-    }
     
     /* Fix the disk if there are errors */
     if (repair == 1)
@@ -915,7 +714,7 @@ os_fshealth_t OS_chkfs (const char *name, boolean repair)
              when given the mount point of the drive
 
     Returns: OS_FS_ERR_INVALID_POINTER if either  parameter is NULL
-             OS_SUCCESS if success
+             OS__SUCCESS if success
              OS_FS_ERROR if the mountpoint could not be found
 ---------------------------------------------------------------------------------------*/
 int32 OS_FS_GetPhysDriveName(char * PhysDriveName, char * MountPoint)
@@ -929,7 +728,10 @@ int32 OS_FS_GetPhysDriveName(char * PhysDriveName, char * MountPoint)
         return OS_FS_ERR_INVALID_POINTER;
     }
     
-    status = OS_TranslatePath((const char *)MountPoint, (char *)LocalDrvName);
+    strncpy(LocalDrvName,MountPoint,OS_MAX_PATH_LEN);
+
+    status = OS_NameChange(LocalDrvName);
+
     if (status != OS_SUCCESS)
     {
         ReturnCode = OS_FS_ERROR;
@@ -943,100 +745,53 @@ int32 OS_FS_GetPhysDriveName(char * PhysDriveName, char * MountPoint)
     return ReturnCode;
 }/* end OS_FS_GetPhysDriveName */
 
+
 /*-------------------------------------------------------------------------------------
- * Name: OS_TranslatePath
+ * Name: OS_NameChange
  * 
  * Purpose: Because of the abstraction of the filesystem across OSes, we have to change
  *          the name of the {file, directory, drive} to be what the OS can actually 
  *          accept
 ---------------------------------------------------------------------------------------*/
-int32 OS_TranslatePath(const char *VirtualPath, char *LocalPath)
-{
+int32 OS_NameChange( char* name)
+{   
+    char LocalName [OS_MAX_PATH_LEN];
+    char newname [OS_MAX_PATH_LEN];
     char devname [OS_MAX_PATH_LEN];
     char filename[OS_MAX_PATH_LEN];
-    int  NumChars;
-    int  DeviceLen;
-    int  FilenameLen;
-    int  i=0;
-
-    /*
-    ** Check to see if the path pointers are NULL
-    */
-    if (VirtualPath == NULL)
-    {
-        return OS_FS_ERR_INVALID_POINTER;
-    }
-
-    if (LocalPath == NULL)
-    {
-        return OS_FS_ERR_INVALID_POINTER;
-    }
+    int NumChars;
+    int i=0;
    
-    /*
-    ** Check to see if the path is too long
-    */
-    if (strlen(VirtualPath) >= OS_MAX_PATH_LEN)
-    {
-        return OS_FS_ERR_PATH_TOO_LONG;
-    }
+    /* copy the name locally for good measure */
+    strncpy(LocalName,name, OS_MAX_PATH_LEN);
+    /*printf("Local_path: $%s\n",LocalName);*/
 
-    /*
-    ** All valid Virtual paths must start with a '/' character
-    */
-    if ( VirtualPath[0] != '/' )
-    {
-       return OS_FS_ERR_PATH_INVALID;
-    }
-
-    /*
-    ** Fill the file and device name to be sure they do not have garbage
-    */
-    memset((void *)devname,0,OS_MAX_PATH_LEN);
-    memset((void *)filename,0,OS_MAX_PATH_LEN);
-   
-    /* 
-    ** We want to find the number of chars to where the second "/" is.
-    ** Since we know the first one is in spot 0, we start looking at 1, and go until
-    ** we find it.
-    */    
-    NumChars = 1;
-    while ((VirtualPath[NumChars] != '/') && (NumChars <= strlen(VirtualPath)))
+    
+    /* we want to find the number of chars in to LocalName the second "/" is.
+     * Since we know the first one is in spot 0, we start looking at 1, and go until
+     * we find it.*/
+    
+    NumChars=1;
+    
+    while (strncmp (&LocalName[NumChars],"/",1) != 0 &&
+           (NumChars <= strlen(LocalName)))
     {
         NumChars++;
     }
-    
-    /* 
-    ** Don't let it overflow to cause a segfault when trying to get the highest level
-    ** directory 
-    */
-    if (NumChars > strlen(VirtualPath))
-    {
-        NumChars = strlen(VirtualPath);
-    }
-  
-    /*
-    ** copy over only the part that is the device name 
-    */
-    strncpy(devname, VirtualPath, NumChars);
-    devname[NumChars] = '\0'; /* Truncate it with a NULL. */
-    DeviceLen = strlen(devname);
-    
-    /*
-    ** Copy everything after the devname as the path/filename
-    */
-    strncpy(filename, &(VirtualPath[NumChars]), OS_MAX_PATH_LEN);
-    FilenameLen = strlen(filename);
-    
-#if 0
-    printf("VirtualPath: %s, Length: %d\n",VirtualPath, (int)strlen(VirtualPath));
-    printf("NumChars: %d\n",NumChars);
-    printf("devname: %s\n",devname);
-    printf("filename: %s\n",filename);
-#endif
 
-    /*
-    ** look for the dev name we found in the VolumeTable 
-    */
+    
+    /* don't let it overflow to cause a segfault when trying to get the highest level
+     * directory */
+    
+    if (NumChars >= strlen(LocalName))
+            NumChars = strlen(LocalName);
+  
+    /* copy over only the part that is the device name */
+    strncpy(devname,LocalName,NumChars);
+    
+    strncpy(filename,(LocalName + NumChars*sizeof(char)), strlen(LocalName) - NumChars+1);
+    
+    /* look for the dev name we found in the VolumeTable */
     for (i = 0; i < NUM_TABLE_ENTRIES; i++)
     {
         if (OS_VolumeTable[i].FreeFlag == FALSE && 
@@ -1046,73 +801,22 @@ int32 OS_TranslatePath(const char *VirtualPath, char *LocalPath)
         }
     }
 
-    /* 
-    ** Make sure we found a valid drive 
-    */
+    /* Make sure we found a valid drive */
     if (i >= NUM_TABLE_ENTRIES)
-    {
-        return OS_FS_ERR_PATH_INVALID;
-    }
+        return OS_FS_ERR_DRIVE_NOT_CREATED;
+   
+    /* copy over the physical part of the drive */
+    strcpy(newname,OS_VolumeTable[i].PhysDevName);
+    strcat(newname, filename);
     
-    /* 
-    ** copy over the physical first part of the drive 
-    */
-    strncpy(LocalPath,OS_VolumeTable[i].PhysDevName,OS_MAX_LOCAL_PATH_LEN);
-    NumChars = strlen(LocalPath);
+    /* push it back to the caller */
+    strncpy(name,newname,OS_MAX_PATH_LEN);
     
-    /*
-    ** Add the file name
-    */
-    strncat(LocalPath, filename, (OS_MAX_LOCAL_PATH_LEN - NumChars));
-
-#if 0
-    printf("Result of TranslatePath = %s\n",LocalPath);
-#endif
+    /* printf("new_path  : $%s\n",newname); */
 
     return OS_FS_SUCCESS;
     
-} /* end OS_TranslatePath */
-
-/*---------------------------------------------------------------------------------------
-    Name: OS_FS_GetErrorName()
-
-    Purpose: a handy debugging tool that will copy the name of the error code to a buffer
-
-    Returns: OS_FS_ERROR if given error number is unknown
-             OS_FS_SUCCESS if given error is found and copied to the buffer
---------------------------------------------------------------------------------------- */
-int32 OS_FS_GetErrorName(int32 error_num, os_fs_err_name_t * err_name)
-{
-    os_fs_err_name_t local_name;
-    int32 return_code;
-
-    return_code = OS_FS_SUCCESS;
-   
-    switch (error_num)
-    {
-        case OS_FS_SUCCESS:
-            strcpy(local_name,"OS_FS_SUCCESS"); break;
-        case OS_FS_ERROR:
-            strcpy(local_name,"OS_FS_ERROR"); break;
-        case OS_FS_ERR_INVALID_POINTER:
-            strcpy(local_name,"OS_FS_ERR_INVALID_POINTER"); break;
-        case OS_FS_ERR_PATH_TOO_LONG:
-            strcpy(local_name,"OS_FS_ERR_PATH_TOO_LONG"); break;
-        case OS_FS_ERR_NAME_TOO_LONG:
-            strcpy(local_name,"OS_FS_ERR_NAME_TOO_LONG"); break;
-        case OS_FS_UNIMPLEMENTED:
-            strcpy(local_name,"OS_FS_UNIMPLEMENTED"); break;
-        case OS_FS_ERR_PATH_INVALID:
-            strcpy(local_name,"OS_FS_ERR_PATH_INVALID"); break;
-        case OS_FS_ERR_DRIVE_NOT_CREATED:
-            strcpy(local_name,"OS_FS_ERR_DRIVE_NOT_CREATED"); break;
-        default: strcpy(local_name,"ERROR_UNKNOWN");
-            return_code = OS_FS_ERROR;
-    }
-    strcpy((char*) err_name, local_name);
-    return return_code;
-}
-
+} /* end OS_NameChange*/
 
 /*-------------------------------------------------------------------------------------
  * Name: OS_GetPhysDeviceName

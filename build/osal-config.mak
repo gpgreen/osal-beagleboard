@@ -7,28 +7,33 @@
 ## NOTE: Make sure each selection does not have any spaces
 ##       after it!
 ##
+##---------------------------------------------------------
+## Hardware Architecture
+## Supported Arhcitectures include:
+##  x86
+##  ppc
+##  coldfire
+##
+##---------------------------------------------------------
+HWARCH = x86
+
+##---------------------------------------------------------
+## Platform
+##---------------------------------------------------------
+PLATFORM = pc
 
 ##---------------------------------------------------------
 ## Operating System
 ## OS = The operating system selected for the Abstraction implementation
-## 
-## Current selections include:
-## 
-## OS = posix
-## OS = rtems
-## OS = vxworks6 
 ##---------------------------------------------------------
-OS = posix
+OS = linux
 
 ##---------------------------------------------------------
 ## BSP -- BSP/Operating system for the board
-##
-## Current selections include:
-## 
-## BSP = mac-osx ( with an Intel CPU )
-## BSP = pc-linux
-## BSP = genppc-vxworks6.4
-## BSP = mcf5235-rtems
-## BSP = beagle-linux
+## BSP = vxworks, vxworks6, etc,
+##       This is to allow different BSP/OS directories without
+##       having to duplicate the OS API directory. For example
+##       on the ppc/mcp750 board, we need a vxworks and vxworks6
+##       BSP, but they can still share the vxworks OS abstraction.
 ##---------------------------------------------------------
-BSP = beagle-linux
+BSP = linux

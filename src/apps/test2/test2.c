@@ -13,8 +13,6 @@ int TestReadWriteLseek(void);
 int TestMkRmDirFreeBytes(void);
 int TestOpenReadCloseDir(void);
 int TestRename(void);
-int TestStat(void);
-int TestOpenFileAPI(void);
 
 os_fs_err_name_t errname;
 
@@ -25,23 +23,17 @@ void OS_Application_Startup(void)
     int status;
     printf("This is Example 2\n");
 
-    /* Make the file system */
+    /* make the file system */
     status = OS_mkfs(0,"/ramdev0","RAM",512,200);
     printf("status after mkfs = %d\n",status);
 
-    if ( status != OS_SUCCESS )
-    {
-       printf("test1 Error. OS_mkfs failed\n");
-       return;
-    }
-
-    status = OS_mount("/ramdev0","/drive0");
+    status =OS_mount("/ramdev0","/drive0");
     printf("status after mount = %d\n",status);
 
-#if 0
+/*
     status = OS_mkfs(0,"/eedev1","RAM",512,200);
     printf("status after mkfs = %d\n",status);
-#endif
+*/
 
     printf("*******************\n");
     TestCreatRemove();
@@ -52,27 +44,18 @@ void OS_Application_Startup(void)
     printf("*******************\n");
     TestMkRmDirFreeBytes();
     printf("*******************\n");
-    TestOpenReadCloseDir();
-    printf("********************\n");
-    TestStat();
-    printf("********************\n");
-    TestOpenFileAPI();
+   TestOpenReadCloseDir();
     printf("********************\n");
 
-    /*
-    ** try unmounting the drive, and then remounting it with a different name 
-    */
+   /*try unmounting the drive, and then remounting it with a different name */
+  
     status = OS_unmount("/drive0");
     if (status < OS_FS_SUCCESS)
-    {
        printf("ERROR from OS_unmount\n");
-    }
     else 
-    {
         printf("Drive Unmounted Sucessfully\n");
-    }
 
-    status = OS_mount("/ramdev0","/drive1");
+    status =OS_mount("/ramdev0","/drive1");
     printf("status after mount = %d\n",status);
     
     TestRename();
@@ -99,7 +82,7 @@ int TestCreatRemove(void)
     char filename [OS_MAX_PATH_LEN];
     char maxfilename[OS_MAX_PATH_LEN];
     char longfilename [OS_MAX_PATH_LEN];
-    int  status;
+    int status;
  
     printf("In TestCreatRemove()\n");
     strcpy(filename,"/drive0/test11chars");
@@ -119,23 +102,18 @@ int TestCreatRemove(void)
         printf("ERROR from OS_creat 1\n");
     }
     else
-    {
         printf("OK- OS_creat 1 \n");
-        OS_close(status);
-    }
-
 
     /* create a file of OS_max_file_name size */
+    
     status = OS_creat(maxfilename,OS_READ_WRITE);
+    
     if (status < OS_FS_SUCCESS)
     {
         printf("ERROR from OS_creat 3 %s\n", errname);
     }
     else
-    {
         printf("OK- OS_creat 3\n");
-        OS_close(status);
-    }
     /* try removing the file from the drive */
     
     status = OS_remove(filename);
@@ -144,9 +122,7 @@ int TestCreatRemove(void)
         printf("ERROR from OS_remove 1 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_remove 1\n");
-    }
     
     /* try removing the file from the drive */
     status = OS_remove(maxfilename);
@@ -155,9 +131,7 @@ int TestCreatRemove(void)
         printf("ERROR from OS_remove 2 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_remove 2\n");
-    }
 
     /* try removing the file from the drive. Should Fail */
     status = OS_remove(longfilename);
@@ -166,9 +140,7 @@ int TestCreatRemove(void)
         printf("ERROR from OS_remove 3 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_remove 3\n");
-    }
 
     /* try removing the file from the drive. Should Fail */
     status = OS_remove("/FileNotOnDrive");
@@ -177,9 +149,7 @@ int TestCreatRemove(void)
         printf("ERROR from OS_remove 4 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_remove 4\n");
-    }
 
     printf("Leaving TestCreatRemove()\n");
   
@@ -201,30 +171,25 @@ int TestOpenClose(void)
     strcpy(filename,"/drive0/Filename1");
 
     /* create a file of reasonable length (but over 8 chars) */
+    
     status = OS_creat(filename,OS_READ_WRITE);
     if (status < OS_FS_SUCCESS)
     {
         printf("ERROR from OS_creat 1 %s \n", errname);
     }
     else
-    {
         printf("OK- OS_creat 1 \n");
-    }
         
     fd = status;
    
-    /*
-    ** try to close the file
-    */
+     /*try to close the file*/
     status = OS_close(fd);
     if (status < OS_FS_SUCCESS)
     {
         printf("ERROR from OS_close 1 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_close 1\n");
-    }
 
     /*  reopen the file */
     status = OS_open(filename,OS_READ_WRITE,644);
@@ -233,48 +198,36 @@ int TestOpenClose(void)
         printf("ERROR from OS_open 1 %s \n", errname);
     }
     else
-    {
         printf("OK- OS_open 1\n");
-    }
 
     fd = status;
    
-    /*
-    ** try to close the file again
-    */
+     /*try to close the file again*/
     status = OS_close(fd);
     if (status < OS_FS_SUCCESS)
     {
         printf("ERROR from OS_close 2 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_close 2\n");
-    }
    
-    /*
-    ** try to close the file again. Should Fail
-    */
+     /*try to close the file again. Should Fail*/
     status = OS_close(fd);
     if (status >= OS_FS_SUCCESS)
     {
         printf("ERROR from OS_close 3 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_close 3\n");
-    }
     
-    /*try to close a file not on the system. Should Fail */
+     /*try to close a file not on the system. Should Fail */
     status = OS_close(43);
     if (status >= OS_FS_SUCCESS)
     {
         printf("ERROR from OS_close 4 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_close 4\n");
-    }
 
     /*  open a file that was never in the system */
     status = OS_open("/drive0/FileNotHere",OS_READ_WRITE,644);
@@ -283,20 +236,17 @@ int TestOpenClose(void)
         printf("ERROR from OS_open 2 %s \n", errname);
     }
     else
-    {
         printf("OK- OS_open 2\n");
-    }
 
     /* try removing the file from the drive  to end the function */
+
     status = OS_remove(filename);
     if (status < OS_FS_SUCCESS)
     {
         printf("ERROR from OS_remove 1 %s \n",errname);
     }
     else
-    {
         printf("OK- OS_remove 1\n");
-    }
 
     printf("Leaving TestOpenClose()\n");
     
@@ -1191,248 +1141,4 @@ int TestRename(void)
     printf("Leaving TestRename\n");
     return 0;
 }
-/*---------------------------------------------------------------------------------------
- *  Name TestStat()
----------------------------------------------------------------------------------------*/
-int TestStat(void)
-{
-    int32  status; 
 
-    char        filename1[OS_MAX_PATH_LEN];
-    char        dir1 [OS_MAX_PATH_LEN];
-    char        buffer1 [OS_MAX_PATH_LEN];
-    os_fstat_t  StatBuff;
-    int32       fd1;
-
-    printf("In TestStat()\n");
-    strcpy(dir1,"/drive0/ThisIsALongDirectoryName");
-    strcpy(filename1,"/drive0/ThisIsALongDirectoryName/MyFile1");
-    strcpy(buffer1,"111111111111");
- 
-    
-
-    /* make the directory */
-    status = OS_mkdir(dir1,0);
-    if (status >= OS_FS_SUCCESS)
-    {
-        printf("OK- OS_mkdir 1\n");
-    }
-    else
-    {
-        printf("ERROR OS_mkdir 1, %s\n",errname);
-        exit(-1);
-    }
-           
-    
-    /* now create a file  */
-    status = OS_creat(filename1,OS_READ_WRITE);
-    if (status >= OS_FS_SUCCESS)
-    {
-        printf("OK- OS_creat 1\n");
-    }
-    else
-    {
-        printf("ERROR OS_creat 1, %s\n",errname);
-        exit(-1);
-    }
-    
-    fd1 = status;
-
-    /* Write some data into the file */
-    
-    status = OS_write(fd1, buffer1, strlen(buffer1));
-    if (status < OS_FS_SUCCESS)
-    {
-        printf("ERROR OS_write 1, %s \n",errname);
-    }
-    else
-    {
-        printf("OK- OS_write 1\n");
-    }
-    
-    status = OS_close(fd1);
-
-    if (status < OS_FS_SUCCESS)
-    {
-        printf("ERROR from OS_close 1 %s\n",errname);
-    }
-    else
-    {
-        printf("OK- OS_close 1\n");
-    }
-
-    /* 
-    ** Make the stat calls 
-    */
-    status = OS_stat( "/drive0/ThisIsALongDirectoryName/",&StatBuff);
-    if ( status < OS_FS_SUCCESS )
-    {
-       printf("ERROR calling OS_stat on /drive0/ThisIsALongDirectoryName/ \n");
-    }
-    else
-    {  
-       printf("Stat call 1 OK\n");
-    }
-
-    status = OS_stat( "/drive0/ThisIsALongDirectoryName",&StatBuff);
-    if ( status < OS_FS_SUCCESS )
-    {
-       printf("ERROR calling OS_stat on /drive0/ThisIsALongDirectoryName/ \n");
-    }
-    else
-    {  
-       printf("Stat call 2 OK\n");
-    }
-
-    status = OS_stat( "/drive0/ThisIsALongDirectoryName/MyFile1",&StatBuff);
-    if ( status < OS_FS_SUCCESS )
-    {
-       printf("ERROR calling OS_stat on /drive0/ThisIsALongDirectoryName/MyFile1 \n");
-    }
-    else
-    {  
-       printf("Stat call 3 OK\n");
-    }
-
-    /* Clean up */
-    status = OS_remove(filename1);
-    if (status < OS_FS_SUCCESS)
-    {
-        printf("ERROR from OS_remove 1 %s\n",errname);
-    }
-    else
-    {
-        printf("OK- OS_remove 1\n");
-    }
- 
-    status = OS_rmdir(dir1);
-    if (status < OS_FS_SUCCESS)
-    {
-        printf("ERROR from OS_rmdir 1 %s\n",errname);
-    }
-    else
-    {
-        printf("OK- OS_rmdir 1\n");
-    }
-
-    printf("Leaving TestCreat()\n");
-    return 0;
-}
-/*---------------------------------------------------------------------------------------
- *  Name: TestOpenFileAPI
- *  This function tests the the misc open File API:
- *    OS_FileOpenCheck(char *Filename);
- *    OS_CloseAllFiles(void);
- *    OS_CloseFileByName(char *Filename);
- *
----------------------------------------------------------------------------------------*/
-int TestOpenFileAPI(void)
-{
-    char filename1 [OS_MAX_PATH_LEN];
-    char filename2 [OS_MAX_PATH_LEN];
-    char filename3 [OS_MAX_PATH_LEN];
-    int status;
-    int fd1;
-    int fd2;
-    int fd3;
-
-    printf("In TestFileOpenAPI()\n");
-    
-    strcpy(filename1,"/drive0/Filename1");
-    strcpy(filename2,"/drive0/Filename2");
-    strcpy(filename3,"/drive0/Filename3");
-
-    /* Create/open a file */
-    status = OS_creat(filename1,OS_READ_WRITE);
-    if (status < OS_FS_SUCCESS)
-    {
-        printf("ERROR from OS_creat 1 %s \n", errname);
-    }
-    else
-    {
-        printf("OK- OS_creat 1 \n");
-    }
-    fd1 = status;
-
-    /* Create/open a file */
-    status = OS_creat(filename2,OS_READ_WRITE);
-    if (status < OS_FS_SUCCESS)
-    {
-        printf("ERROR from OS_creat 2 %s \n", errname);
-    }
-    else
-    {
-        printf("OK- OS_creat 2 \n");
-    }        
-    fd2 = status;
-   
-    /* Create/open a file */
-    status = OS_creat(filename3,OS_READ_WRITE);
-    if (status < OS_FS_SUCCESS)
-    {
-        printf("ERROR from OS_creat 3 %s \n", errname);
-    }
-    else
-    {
-        printf("OK- OS_creat 3 \n");
-    }        
-    fd3 = status;
-
-    /* 
-    ** Try OS_FileOpenCheck
-    */
-    status = OS_FileOpenCheck(filename1);
-    if ( status < OS_FS_SUCCESS ) 
-    {
-       printf("ERROR from OS_FileOpenCheck with file: %s, status: %d\n",
-               filename1, status);
-    }
-    else
-    {
-       printf("OS_FileOpenCheck with file: %s. File is open -- OK\n",filename1);
-    } 
-
-    /*
-    ** Try OS_CloseFileByName
-    */
-    status = OS_CloseFileByName(filename1);
-    if ( status < OS_FS_SUCCESS )
-    {
-       printf("ERROR from OS_CloseFileByName with file: %s, status: %d\n",
-                 filename1, status );
-    }
-    else
-    {
-       printf("OS_CloseFileByName with file: %s worked.\n",filename1);
-    }
-
-    /*
-    ** Try OS_CloseAllFiles
-    */
-    status = OS_CloseAllFiles();
-    if ( status < OS_FS_SUCCESS )
-    {
-       printf("ERROR from OS_CloseAllFiles status: %d\n",status);
-    }
-    else
-    {
-       printf("OS_CloseAllFiles OK\n");
-    }
-
-    /*
-    ** Try OS_CloseFileByName with a file that is already closed
-    */
-    status = OS_CloseFileByName(filename2);
-    if ( status < OS_FS_SUCCESS )
-    {
-       printf("Expected ERROR from OS_CloseFileByName with file: %s, status: %d\n",
-                 filename2, status );
-    }
-    else
-    {
-       printf("OS_CloseFileByName with file: %s worked. NOT EXPECTED!\n",filename2);
-    }
-    printf("Leaving TestOpenFileAPI()\n");
-    
-    return 0;
-}

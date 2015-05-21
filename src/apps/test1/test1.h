@@ -11,7 +11,7 @@
 
 /* Task 0 */
 #define TASK_0_STACK_SIZE 1024
-#define TASK_0_PRIORITY   230
+#define TASK_0_PRIORITY   100
 
 uint32 task_0_stack[TASK_0_STACK_SIZE];
 
@@ -20,7 +20,7 @@ void task_0(void);
 /* Task 1 */
 
 #define TASK_1_STACK_SIZE 1024
-#define TASK_1_PRIORITY   231
+#define TASK_1_PRIORITY   101
 
 uint32 task_1_stack[TASK_1_STACK_SIZE];
 
@@ -29,7 +29,7 @@ void task_1(void);
 /* Task 2 */
 
 #define TASK_2_STACK_SIZE 1024
-#define TASK_2_PRIORITY   232
+#define TASK_2_PRIORITY   102
 
 uint32 task_2_stack[TASK_2_STACK_SIZE];
 
@@ -38,7 +38,7 @@ void task_2(void);
 /* Task 3 */
 
 #define TASK_3_STACK_SIZE 1024
-#define TASK_3_PRIORITY   233
+#define TASK_3_PRIORITY   103
 
 uint32 task_3_stack[TASK_3_STACK_SIZE];
 
@@ -47,7 +47,7 @@ void task_3(void);
 /* Task 4 */
 
 #define TASK_4_STACK_SIZE 1024
-#define TASK_4_PRIORITY   234
+#define TASK_4_PRIORITY   104
 
 uint32 task_4_stack[TASK_4_STACK_SIZE];
 
@@ -56,7 +56,7 @@ void task_4(void);
 /* Task 5 */
 
 #define TASK_5_STACK_SIZE 1024
-#define TASK_5_PRIORITY   235
+#define TASK_5_PRIORITY   105
 
 uint32 task_5_stack[TASK_5_STACK_SIZE];
 
@@ -65,7 +65,7 @@ void task_5(void);
 /* Task 6 */
 
 #define TASK_6_STACK_SIZE 1024
-#define TASK_6_PRIORITY   236
+#define TASK_6_PRIORITY   106
 
 uint32 task_6_stack[TASK_6_STACK_SIZE];
 
@@ -74,7 +74,7 @@ void task_6(void);
 /* Task 7 */
 
 #define TASK_7_STACK_SIZE 1024
-#define TASK_7_PRIORITY   237
+#define TASK_7_PRIORITY   107
 
 uint32 task_7_stack[TASK_7_STACK_SIZE];
 
@@ -83,7 +83,7 @@ void task_7(void);
 /* Task 8 */
 
 #define TASK_8_STACK_SIZE 1024
-#define TASK_8_PRIORITY   238
+#define TASK_8_PRIORITY   108
 
 uint32 task_8_stack[TASK_8_STACK_SIZE];
 
@@ -92,7 +92,7 @@ void task_8(void);
 /* Task 9 */
 
 #define TASK_9_STACK_SIZE 1024
-#define TASK_9_PRIORITY   239
+#define TASK_9_PRIORITY   109
 
 uint32 task_9_stack[TASK_9_STACK_SIZE];
 
@@ -101,7 +101,7 @@ void task_9(void);
 /* Task 10 */
 
 #define TASK_10_STACK_SIZE 1024
-#define TASK_10_PRIORITY   240
+#define TASK_10_PRIORITY   110
 
 uint32 task_10_stack[TASK_10_STACK_SIZE];
 
@@ -110,7 +110,7 @@ void task_10(void);
 /* Task 11 */
 
 #define TASK_11_STACK_SIZE 1024
-#define TASK_11_PRIORITY   241
+#define TASK_11_PRIORITY   111
 
 uint32 task_11_stack[TASK_11_STACK_SIZE];
 
@@ -119,7 +119,7 @@ void task_11(void);
 /* Task 12 */
 
 #define TASK_12_STACK_SIZE 1024
-#define TASK_12_PRIORITY   242
+#define TASK_12_PRIORITY   112
 
 uint32 task_12_stack[TASK_12_STACK_SIZE];
 
@@ -128,7 +128,7 @@ void task_12(void);
 /* Task 13 */
 
 #define TASK_13_STACK_SIZE 1024
-#define TASK_13_PRIORITY   243
+#define TASK_13_PRIORITY   113
 
 uint32 task_13_stack[TASK_13_STACK_SIZE];
 
@@ -137,7 +137,7 @@ void task_13(void);
 /* Task 14 */
 
 #define TASK_14_STACK_SIZE 1024
-#define TASK_14_PRIORITY   244
+#define TASK_14_PRIORITY   114
 
 uint32 task_14_stack[TASK_14_STACK_SIZE];
 
@@ -145,7 +145,7 @@ void task_14(void);
 /* Task 15 */
 
 #define TASK_15_STACK_SIZE 1024
-#define TASK_15_PRIORITY   245
+#define TASK_15_PRIORITY   115
 
 uint32 task_15_stack[TASK_15_STACK_SIZE];
 
@@ -154,7 +154,7 @@ void task_15(void);
 /* Task 16 */
 
 #define TASK_16_STACK_SIZE 1024
-#define TASK_16_PRIORITY   246
+#define TASK_16_PRIORITY   116
 
 uint32 task_16_stack[TASK_16_STACK_SIZE];
 
@@ -163,7 +163,7 @@ void task_16(void);
 /* Task 17 */
 
 #define TASK_17_STACK_SIZE 1024
-#define TASK_17_PRIORITY   247
+#define TASK_17_PRIORITY   117
 
 uint32 task_17_stack[TASK_17_STACK_SIZE];
 
@@ -172,7 +172,7 @@ void task_17(void);
 /* Task 18 */
 
 #define TASK_18_STACK_SIZE 1024
-#define TASK_18_PRIORITY   248
+#define TASK_18_PRIORITY   118
 
 uint32 task_18_stack[TASK_18_STACK_SIZE];
 
@@ -181,7 +181,7 @@ void task_18(void);
 /* Task 19 */
 
 #define TASK_19_STACK_SIZE 1024
-#define TASK_19_PRIORITY   249
+#define TASK_19_PRIORITY   119
 
 uint32 task_19_stack[TASK_19_STACK_SIZE];
 
@@ -190,7 +190,7 @@ void task_19(void);
 /* Task 20 */
 
 #define TASK_20_STACK_SIZE 1024
-#define TASK_20_PRIORITY   250
+#define TASK_20_PRIORITY   120
 
 uint32 task_20_stack[TASK_20_STACK_SIZE];
 

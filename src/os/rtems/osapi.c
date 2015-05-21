@@ -1,95 +1,110 @@
 /*
 ** File   :	osapi.c
 **
-**      Copyright (c) 2004-2006, United States government as represented by the 
-**      administrator of the National Aeronautics Space Administration.  
-**      All rights reserved. This software was created at NASAs Goddard 
-**      Space Flight Center pursuant to government contracts.
-**
-**      This is governed by the NASA Open Source Agreement and may be used, 
-**      distributed and modified only pursuant to the terms of that agreement.
-**
 ** Author :	Ezra Yeheskeli
 **
 ** Purpose: 
 **	   This file  contains some of the OS APIs abstraction layer.It 
 **     contains those APIs that call the  OS. In this case the OS is the Rtems OS.
 **
-**  $Date: 2011/12/13 11:57:16EST $
-**  $Revision: 1.17 $
+**  $Date: 2007/10/16 16:14:58EDT $
+**  $Revision: 1.1 $
 **  $Log: osapi.c  $
-**  Revision 1.17 2011/12/13 11:57:16EST acudmore 
-**  Removed Cast from interrupt disable call. It was failing to compile on rtems4.10-sparc
-**  Revision 1.16 2011/12/05 15:26:05EST acudmore 
-**  Added semaphore protection for counting semaphore give and take operations
-**  Revision 1.15 2011/06/27 15:52:03EDT acudmore 
-**  Went over APIs and Documentation for return code consistency.
-**  Updated documentation, function comments, and return codes as needed.
-**  Revision 1.14 2010/11/12 12:01:10EST acudmore 
-**  replaced copyright character with (c) and added open source notice where needed.
-**  Revision 1.13 2010/11/10 15:43:01EST acudmore 
-**  Fixed several errors:
-**  1. A left over pthread mutex ID instead of an RTEMS ID
-**  2. Several instances where the wrong internal table muxtex was being used to lock shared data
-**  Revision 1.12 2010/11/10 15:34:10EST acudmore 
-**  Fixed IntAttachHandler Prototype
-**  Revision 1.11 2010/03/08 12:08:02EST acudmore 
-**  fixed warnings by using a function pointer type
-**  Revision 1.10 2010/02/16 11:58:00EST acudmore 
-**  Overhaul of RTEMS implementation:
-**    - converted internal posix semaphores to RTEMS semaphores
-**    - converted mutex API from POSIX to RTEMS
-**  Revision 1.9 2010/02/04 16:50:06EST acudmore 
-**  Updated white space and braces for consistancy
-**  Revision 1.8 2010/02/01 12:40:34EST acudmore 
-**  Changes to support return code on OS_API_Init
-**  Revision 1.7 2010/01/26 13:56:03EST acudmore 
-**  Updated Counting Semaphore API to remove restriction on maximum value
-**  Revision 1.6 2009/08/04 11:38:09EDT acudmore 
-**  Added OS_HeapGetInfo
-**  Revision 1.5 2009/07/09 13:04:00EDT acudmore 
-**  Fixed MutSemTake/Give error when a thread already has the mutex locked.
-**  Revision 1.4 2009/07/07 13:18:30EDT acudmore 
-**  Added code to init module loader. 
-**  Changed task naming convention to use User Supplied name.
-**  Revision 1.3 2008/08/27 11:54:00EDT apcudmore 
-**  Added code to allow mutex take on a task that already has it locked.
-**  Revision 1.2 2008/08/26 13:51:16EDT apcudmore 
-**  added RTEMS timer API
-**  Revision 1.1 2008/04/20 22:36:09EDT ruperera 
-**  Initial revision
-**  Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-OSAL-REPOSITORY/src/os/rtems/project.pj
-**  Revision 1.6 2008/02/12 13:27:59EST apcudmore 
-**  New API updates:
-**    - fixed RTEMS osapi compile error
-**    - related makefile fixes
-**    - header file parameter update
-**  Revision 1.5 2008/01/31 15:03:51EST njyanchik 
-**  I used Greg's implementation to create a new #define to switch between the sockets implementation and the message queue implementation for Linux.
-**  Revision 1.3 2008/01/29 15:30:52AST njyanchik 
-**  I added code to all the ports that allow the values of both binary and counting semaphores to be
-**  gotten through the OS_*SemGetInfo API.
-**  Revision 1.2 2008/01/23 15:44:49EST njyanchik 
-**  I added an extra member to the structure that is returned when OS_CountSemGetInfo is called,
-**   but it only works on VxWorks and Linux
 **  Revision 1.1 2007/10/16 16:14:58EDT apcudmore 
 **  Initial revision
+**  Member added to project d:/mksdata/MKS-OSAL-REPOSITORY/src/os/rtems/project.pj
+**  Revision 1.31 2007/09/25 10:32:09EDT apcudmore 
+**  Added OS task ID field to task_prop structure in OS_TaskGetInfo call.
+**  Revision 1.30 2007/09/24 10:35:57EDT apcudmore 
+**  Removed duplicate function: OS_GetTimebase
+**  Revision 1.29 2007/07/09 12:18:39EDT apcudmore 
+**  Added FPU mask functions to the OSAPI.
+**  vxWorks 6 version is functional, others are stubs.
+**  Revision 1.28 2007/07/05 14:59:01EDT njyanchik 
+**  I sem-protected a bigger block in each of the create functions, and set the free flag (or IsValid 
+**  flag) to false before sem protection ends. That way another task can't get the same ID. This
+**  was done for the OS_open, OS_creat, and all OS_*Create calls.
+**  Revision 1.27 2007/05/08 09:14:52EDT njyanchik 
+**  The previous implementation of semaphores in linux (sem_open/ sem_close) 
+**  is not supported on Cygwin. 
+**  The calls need to use the sem_init/sem_destroy api's
+**  Revision 1.26 2007/04/30 11:01:39EDT njyanchik 
+**  The checks in vxworks and rtems for making sure a semaphore (or mutex) was not taken before
+**  deleting were still in the code. They have now been removed.
+**  Revision 1.25 2007/04/24 11:36:39EDT njyanchik 
+**  I Implemented the followiing fixes:
+**  Items 1,2,3 are for vxworks 5.5 , so we don't have to change that at all
+**  Item 4: fixed by adding a check for the length of the volume name (volname) on entry to the function
+**  Items 5,6, fixed by making the final strcpy a strncpy in OS_NameChange to make sure the string returned is less than or equal to the maximum number of bytes.
+**  Item 7: fixed by making the first strcpy in OS_NameChange a strncpy to prevent the input from being too long. This way the string length of LocalName won't be too long to use in line 704.
+**  Item 9: Fixed by making the error number parameter an int32 instead of a uint32
+**  Revision 1.24 2007/04/05 07:43:42EDT njyanchik 
+**  The OS_TaskExit APIs were added to all OS's
+**  Revision 1.23 2007/04/04 08:11:42EDT njyanchik 
+**  This CP changes the names of the previous APIs from OS_IntEnableAll/ OS_IntDisableAll to the 
+**  more acurate OS_IntUnlock/OS_IntLock.
+**  
+**  It also adds in 2 new API's: OS_IntEnable and OS_IntDisable for disabling specific interrupts
+**  Revision 1.22 2007/03/29 13:42:37EST njyanchik 
+**  I made a syntax error in OS_SetLocalTime. It has been fixed.
+**  Revision 1.21 2007/03/29 07:58:24EST njyanchik 
+**  A new API, OS_SetLocalTime, has been added to give the user the ability to set the local clock.
+**  This function is the compliment of OS_GetLocalTime.
+**  Revision 1.20 2007/03/20 09:28:09EST njyanchik 
+**  I added a counting semaphore implementation to all OS's. This also included removing the #define
+**  OS_MAX_SEMAPHORES and creating two new ones, OS_MAX_BIN_SEMAPHORES and
+**  OS_MAX_COUNT_SEMAPHORES in osconfig.h. Also, cfe_es_shell was changed in order to
+**  accommodate the chanes to the #defines.
+**  Revision 1.19 2007/03/15 11:16:50EST njyanchik 
+**  I changed the interrupt enable/disable pair to use a lock key that records the previous state
+**  of the interrupts before disabling, and then use that key to re-enable the interrupts.
+**  The CFE core applications that use this pair were also fixed for this API change.
+**  Revision 1.18 2007/02/28 10:24:51EST njyanchik 
+**  There was an issue with the type declaration of the retuyrn value of the function. It was resolved.
+**  Revision 1.17 2007/02/27 15:22:08EST njyanchik 
+**  This CP has the initial import of the new file descripor table mechanism
+**  Revision 1.16 2006/10/16 09:29:10EDT njyanchik 
+**  This CP adds the  OS_BinSemFlush API. This also necessitated changing the
+**  semaphore implementation of RTEMS to allow for the semaphore flushing 
+**  function.
+**  
+**  Also with this change is the change to the ES startup. It was using OS_BinSemGive
+**  because that had technically been implementing the semaphore flushing 
+**  functionality. Since there is now a specified SemFlush, it was changed to 
+**  used that call instead.
+**  Revision 1.15 2006/09/11 14:25:00GMT-05:00 njyanchik 
+**  There is now a new option when calling OS_TaskCreate a value of 
+**  OS_FP_ENABLED as the 'flags' parameter will enable floating point operations.
+**  
+**  The #define was created in os-osapi-core.h
+**  Revision 1.14 2006/08/25 13:55:12EDT njyanchik 
+**  To make sure we are only checking against used names, I added a check to see
+**  if the entry we are looking at is being used.This affects all OS's in the cFE
+**  Revision 1.13 2006/06/21 07:58:26EDT njyanchik 
+**  Changes occured in every osapi.c file and in the WriteToSysLog function in ES.
+**  Revision 1.12 2006/06/08 13:32:44EDT apcudmore 
+**  Updated osapi.c  to fix a typo with the semaphore table, the OS_QueueGet and the Interrupt enable/disable functions
+**  Revision 1.11 2006/02/27 16:53:03GMT njyanchik 
+**  I removed references to the circular buffer, as well as changed the osx/ linux/ rtems versions 
+**  to not have a utility task at all.
+**  Revision 1.10 2006/02/03 09:06:55EST njyanchik 
+**  even though they all say "no differences, I'm copy and pasting the files from the osal v2.3 into the cfe 
+**  to make sure there is a consitant version
 */
 /****************************************************************************************
                                     INCLUDE FILES
 ****************************************************************************************/
 #define _USING_RTEMS_INCLUDES_
 
-#include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <stdlib.h>
-#include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <errno.h> /* checking ETIMEDOUT */
 #include <rtems.h>
-#include <rtems/malloc.h>
+#include <semaphore.h> /*sem_t */
 
 /*
 ** User defined include files
@@ -97,12 +112,9 @@
 #include "common_types.h"
 #include "osapi.h"
 
-/*
-** Function Prototypes
-*/
-int     malloc_info ( Heap_Information_block *the_info); /* This is not in an RTEMS header */
-uint32  OS_CompAbsDelayedTime( uint32 milli_second , struct timespec * tm);
-uint32  OS_FindCreator(void);
+#include "stdlib.h"
+#include "string.h"
+
 /****************************************************************************************
                                      DEFINES
 ****************************************************************************************/
@@ -110,76 +122,65 @@ uint32  OS_FindCreator(void);
 #define RTEMS_INT_LEVEL_ENABLE_ALL 0
 #define RTEMS_INT_LEVEL_DISABLE_ALL 7
 
-#define MAX_PRIORITY  255
-#define MAX_SEM_VALUE 0xFFFF
+#define MAX_PRIORITY 255
 #define UNINITIALIZED 0 
-
-#define OSAL_TABLE_MUTEX_ATTRIBS \
- (RTEMS_PRIORITY | RTEMS_BINARY_SEMAPHORE | \
-  RTEMS_INHERIT_PRIORITY | RTEMS_NO_PRIORITY_CEILING | RTEMS_LOCAL)
-
+uint32  OS_CompAbsDelayedTime( uint32 milli_second , struct timespec * tm);
+uint32 OS_FindCreator(void);
 /****************************************************************************************
                                    GLOBAL DATA
 ****************************************************************************************/
+
+
+
 /*  tables for the properties of objects */
 
 /*tasks */
 typedef struct
 {
-    int      free;
+    int free;
     rtems_id id;
-    char     name [OS_MAX_API_NAME];
-    int      creator;
-    uint32   stack_size;
-    uint32   priority;
-    void    *delete_hook_pointer;
-    
+    char name [OS_MAX_API_NAME];
+    int creator;
+    uint32 stack_size;
+    uint32 priority;
 }OS_task_record_t;
     
 /* queues */
 typedef struct
 {
-    int      free;
+    int free;
     rtems_id id;
-    char     name [OS_MAX_API_NAME];
-    int      creator;
+    char name [OS_MAX_API_NAME];
+    int creator;
 }OS_queue_record_t;
 
 /* Binary Semaphores */
 typedef struct
 {
-    int      free;
-    rtems_id id;
-    char     name [OS_MAX_API_NAME];
-    int      creator;    
-    int      max_value;
-    int      current_value;
+    int free;
+    sem_t id;
+    char name [OS_MAX_API_NAME];
+    int creator;
 }OS_bin_sem_record_t;
 
 /* Counting Semaphores */
 typedef struct
 {
-    int      free;
-    rtems_id id;
-    char     name [OS_MAX_API_NAME];
-    int      creator;
-    int      max_value;
-    int      current_value;
+    int free;
+    sem_t id;
+    char name [OS_MAX_API_NAME];
+    int creator;
 }OS_count_sem_record_t;
-
 /* Mutexes */
 typedef struct
 {
-    int             free;
-    rtems_id        id;
-    char            name [OS_MAX_API_NAME];
-    int             creator;
+    int free;
+    pthread_mutex_t id;
+    char name [OS_MAX_API_NAME];
+    int creator;
 }OS_mut_sem_record_t;
 
-/* function pointer type */
-typedef void (*FuncPtr_t)(void);
-
-void    *OS_task_key = 0;         /* this is what rtems wants! */
+void             *OS_task_key = 0;         /* this is what rtems wants! */
 
 /* Tables where the OS object information is stored */
 OS_task_record_t    OS_task_table          [OS_MAX_TASKS];
@@ -188,11 +189,12 @@ OS_bin_sem_record_t OS_bin_sem_table       [OS_MAX_BIN_SEMAPHORES];
 OS_count_sem_record_t OS_count_sem_table   [OS_MAX_COUNT_SEMAPHORES];
 OS_mut_sem_record_t OS_mut_sem_table       [OS_MAX_MUTEXES];
 
-rtems_id            OS_task_table_sem;
-rtems_id            OS_queue_table_sem;
-rtems_id            OS_bin_sem_table_sem;
-rtems_id            OS_mut_sem_table_sem;
-rtems_id            OS_count_sem_table_sem;
+sem_t OS_task_table_sem;
+sem_t OS_queue_table_sem;
+sem_t OS_bin_sem_table_sem;
+sem_t OS_mut_sem_table_sem;
+sem_t OS_count_sem_table_sem;
+
 
 /****************************************************************************************
                                 INITIALIZATION FUNCTION
@@ -204,25 +206,27 @@ rtems_id            OS_count_sem_table_sem;
    Purpose: Initialize the tables that the OS API uses to keep track of information
             about objects
 
-   returns: OS_SUCCESS or OS_ERROR
+   returns: nothing
 ---------------------------------------------------------------------------------------*/
-int32 OS_API_Init(void)
+
+
+void OS_API_Init(void)
 {
-    int               i;
-    int32             return_code = OS_SUCCESS;
-    rtems_status_code rtems_sc;
+    int i;
 
     /* Initialize Task Table */
+
+   
     for(i = 0; i < OS_MAX_TASKS; i++)
     {
-        OS_task_table[i].free                = TRUE;
-        OS_task_table[i].id                  = UNINITIALIZED;
-        OS_task_table[i].creator             = UNINITIALIZED;
-        OS_task_table[i].delete_hook_pointer = NULL;
+        OS_task_table[i].free        = TRUE;
+        OS_task_table[i].id          = UNINITIALIZED;
+        OS_task_table[i].creator     = UNINITIALIZED;
         strcpy(OS_task_table[i].name,"");    
     }
 
     /* Initialize Message Queue Table */
+
     for(i = 0; i < OS_MAX_QUEUES; i++)
     {
         OS_queue_table[i].free        = TRUE;
@@ -232,6 +236,7 @@ int32 OS_API_Init(void)
     }
 
     /* Initialize Binary Semaphore Table */
+
     for(i = 0; i < OS_MAX_BIN_SEMAPHORES; i++)
     {
         OS_bin_sem_table[i].free        = TRUE;
@@ -241,6 +246,7 @@ int32 OS_API_Init(void)
     }
 
     /* Initialize Counting Semaphore Table */
+
     for(i = 0; i < OS_MAX_COUNT_SEMAPHORES; i++)
     {
         OS_count_sem_table[i].free        = TRUE;
@@ -249,7 +255,9 @@ int32 OS_API_Init(void)
         strcpy(OS_count_sem_table[i].name,"");
     }
 
+
     /* Initialize Mutex Semaphore Table */
+
     for(i = 0; i < OS_MAX_MUTEXES; i++)
     {
         OS_mut_sem_table[i].free        = TRUE;
@@ -258,83 +266,33 @@ int32 OS_API_Init(void)
         strcpy(OS_mut_sem_table[i].name,"");
     }
     
-    /*
-    ** Initialize the module loader
-    */
-    #ifdef OS_INCLUDE_MODULE_LOADER
-      return_code = OS_ModuleTableInit();
-      if ( return_code == OS_ERROR )
-      {
-         return(return_code);
-      }
-    #endif
 
-   /*
-   ** Initialize the Timer API
-   */
-   return_code = OS_TimerAPIInit();
-   if ( return_code == OS_ERROR )
-   {
-      return(return_code);
-   }
+	sem_init(&(OS_task_table_sem ),
+		0 ,                   /* no process sharing */
+		OS_SEM_FULL ) ; /* initial value of sem_initial value */
 
-   /*
-   ** Initialize the internal table Mutexes
-   */
-   rtems_sc = rtems_semaphore_create (rtems_build_name ('M', 'U', 'T', '1'),
-                                      1, OSAL_TABLE_MUTEX_ATTRIBS, 0,
-                                      &OS_task_table_sem);
-   if ( rtems_sc != RTEMS_SUCCESSFUL )
-   {
-      return_code = OS_ERROR;
-      return(return_code);
-   }
+	sem_init(&(OS_queue_table_sem ),
+		0 ,                   /* no process sharing */
+		OS_SEM_FULL ) ; /* initial value of sem_initial value */
 
-   rtems_sc = rtems_semaphore_create (rtems_build_name ('M', 'U', 'T', '2'),
-                                      1, OSAL_TABLE_MUTEX_ATTRIBS, 0,
-                                      &OS_queue_table_sem);
-   if ( rtems_sc != RTEMS_SUCCESSFUL )
-   {
-      return_code = OS_ERROR;
-      return(return_code);
-   }
+    sem_init(&(OS_bin_sem_table_sem ),
+		0 ,                   /* no process sharing */
+		OS_SEM_FULL ) ; /* initial value of sem_initial value */
+    
+    sem_init(&(OS_count_sem_table_sem ),
+		0 ,                   /* no process sharing */
+		OS_SEM_FULL ) ; /* initial value of sem_initial value */
 
-   rtems_sc = rtems_semaphore_create (rtems_build_name ('M', 'U', 'T', '3'),
-                                      1, OSAL_TABLE_MUTEX_ATTRIBS, 0,
-                                      &OS_bin_sem_table_sem);
-   if ( rtems_sc != RTEMS_SUCCESSFUL )
-   {
-      return_code = OS_ERROR;
-      return(return_code);
-   }
+    sem_init(&(OS_mut_sem_table_sem ),
+		0 ,                   /* no process sharing */
+		OS_SEM_FULL ) ; /* initial value of sem_initial value */
 
-   rtems_sc = rtems_semaphore_create (rtems_build_name ('M', 'U', 'T', '4'),
-                                      1, OSAL_TABLE_MUTEX_ATTRIBS, 0,
-                                      &OS_count_sem_table_sem);
-   if ( rtems_sc != RTEMS_SUCCESSFUL )
-   {
-      return_code = OS_ERROR;
-      return(return_code);
-   }
- 
-   rtems_sc = rtems_semaphore_create (rtems_build_name ('M', 'U', 'T', '5'),
-                                      1, OSAL_TABLE_MUTEX_ATTRIBS, 0,
-                                      &OS_mut_sem_table_sem);
-   if ( rtems_sc != RTEMS_SUCCESSFUL )
-   {
-      return_code = OS_ERROR;
-      return(return_code);
-   }
+    OS_FS_Init();
 
-   /*
-   ** File system init
-   */
-   return_code = OS_FS_Init();
-
-   
-   return(return_code);
-   
+       
+       return;
 } /* end OS_API_Init */
+
 
 /****************************************************************************************
                                     TASK API
@@ -359,40 +317,38 @@ int32 OS_API_Init(void)
 
 ---------------------------------------------------------------------------------------*/
 
-int32 OS_TaskCreate (uint32 *task_id, const char *task_name, osal_task_entry function_pointer,
+
+int32 OS_TaskCreate (uint32 *task_id, const char *task_name,const void *function_pointer,
                       const uint32 *stack_pointer, uint32 stack_size, uint32 priority, 
                       uint32 flags)
 {
-    uint32             possible_taskid;
-    uint32             i;
-    rtems_status_code  status;
-    rtems_name         r_name;
-    rtems_mode         r_mode;
-    rtems_attribute    r_attributes;
+    uint32 possible_taskid;
+    uint32 i;
+	rtems_status_code  status;
+	rtems_name         r_name;
+	rtems_mode         r_mode;
+	rtems_attribute    r_attributes;
 
 
-    /* Check for NULL pointers */
-    if( (task_name == NULL) || (function_pointer == NULL) || (task_id == NULL) )
-    {
-        return OS_INVALID_POINTER;
-    }
-    
     /* we don't want to allow names too long*/
     /* if truncated, two names might be the same */
+    
+    /* Check for NULL pointers */
+    
+    if( (task_name == NULL) || (function_pointer == NULL) || (task_id == NULL) )
+        return OS_INVALID_POINTER;
+    
     if (strlen(task_name) >= OS_MAX_API_NAME)
-    {
-        return OS_ERR_NAME_TOO_LONG;
-    }
+            return OS_ERR_NAME_TOO_LONG;
 
     /* Check for bad priority */
+
     if (priority > MAX_PRIORITY)
-    {
         return OS_ERR_INVALID_PRIORITY;
-    }
+
     
     /* Check Parameters */
-    status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
+    sem_wait( &(OS_task_table_sem));
     for(possible_taskid = 0; possible_taskid < OS_MAX_TASKS; possible_taskid++)
     {
         if (OS_task_table[possible_taskid].free == TRUE)
@@ -402,19 +358,21 @@ int32 OS_TaskCreate (uint32 *task_id, const char *task_name, osal_task_entry fun
     }
 
     /* Check to see if the id is out of bounds */
+    
     if( possible_taskid >= OS_MAX_TASKS || OS_task_table[possible_taskid].free != TRUE)
     {    
-        status = rtems_semaphore_release (OS_task_table_sem);
+        sem_post( &(OS_task_table_sem));
         return OS_ERR_NO_FREE_IDS;
     }
 
     /* Check to see if the name is already taken */
+
     for (i = 0; i < OS_MAX_TASKS; i++)
     {
         if ((OS_task_table[i].free == FALSE) &&
            ( strcmp((char*)task_name, OS_task_table[i].name) == 0)) 
         {        
-            status = rtems_semaphore_release (OS_task_table_sem);
+            sem_post( &(OS_task_table_sem));
             return OS_ERR_NAME_TAKEN;
         }
     }
@@ -422,19 +380,15 @@ int32 OS_TaskCreate (uint32 *task_id, const char *task_name, osal_task_entry fun
      * no other task can try to use it */
 
     OS_task_table[possible_taskid].free  = FALSE;
-    status = rtems_semaphore_release (OS_task_table_sem);
+    
+    sem_post( &(OS_task_table_sem));
+    
+	r_name = rtems_build_name('O','S',' ',' ');
+	r_mode = RTEMS_PREEMPT | RTEMS_NO_ASR | RTEMS_NO_TIMESLICE | RTEMS_INTERRUPT_LEVEL(0);
 
-    /*
-    ** RTEMS task names are only 4 characters. 
-    ** Use the passed in name so at least you can try to determine the name
-    */    
-    r_name = rtems_build_name(task_name[0],task_name[1],task_name[2],task_name[3]);
-    r_mode = RTEMS_PREEMPT | RTEMS_NO_ASR | RTEMS_NO_TIMESLICE | RTEMS_INTERRUPT_LEVEL(0);
-
-    /* 
-    ** see if the user wants floating point enabled. If 
-    ** so, then se the correct option.
-    */
+    /* see if the user wants floating point enabled. If 
+     * so, then se the correct option.
+     */
     if (flags == OS_FP_ENABLED)
     {
         r_attributes = RTEMS_FLOATING_POINT | RTEMS_LOCAL;
@@ -445,50 +399,54 @@ int32 OS_TaskCreate (uint32 *task_id, const char *task_name, osal_task_entry fun
     }
 	
     status = rtems_task_create(
-                 r_name,
-		 priority,
-		 stack_size,
-		 r_mode,
-		 r_attributes,
-		 &OS_task_table[possible_taskid].id); 
+			     r_name,
+				 priority,
+				 stack_size,
+				 r_mode,
+				 r_attributes,
+				 &OS_task_table[possible_taskid].id); 
     
     /* check if task_create failed */
-    if (status != RTEMS_SUCCESSFUL )
+
+	if (status != RTEMS_SUCCESSFUL )
     {       
-        status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        sem_wait( &(OS_task_table_sem));
         OS_task_table[possible_taskid].free  = TRUE;
-        status = rtems_semaphore_release (OS_task_table_sem);
-	return OS_ERROR;
+        sem_post( &(OS_task_table_sem));
+		return OS_ERROR;
     } 
 
-    /* will place the task in 'ready for scheduling' state */
-    status = rtems_task_start (OS_task_table[possible_taskid].id, /*rtems task id*/
-			     (rtems_task_entry) function_pointer, /*task entry point */
-				 0 );                             /* passed argument  */
+	/* will place the task in 'ready for scheduling' state */
+	status = rtems_task_start (OS_task_table[possible_taskid].id, /*rtems task id*/
+			     function_pointer,                                /*task entry point */
+				 0 );                                             /* passed argument  */
 	
-    if (status != RTEMS_SUCCESSFUL )
+	if (status != RTEMS_SUCCESSFUL )
     {		
-        status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        sem_wait( &(OS_task_table_sem));
         OS_task_table[possible_taskid].free  = TRUE;
-        status = rtems_semaphore_release (OS_task_table_sem);
-	return OS_ERROR;		
+        sem_post( &(OS_task_table_sem));
+		return OS_ERROR;		
     }
     
     /* Set the task_id to the id that was found available 
        Set the name of the task, the stack size, and priority */
+    
     *task_id = possible_taskid;
-
+    
     strcpy(OS_task_table[*task_id].name, (char*) task_name);
    
+    
     /* this Id no longer free */
-    status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_task_table_sem));
     OS_task_table[*task_id].creator = OS_FindCreator();
     OS_task_table[*task_id].stack_size = stack_size;
     OS_task_table[*task_id].priority = priority;
-    status = rtems_semaphore_release (OS_task_table_sem);
+    sem_post( &(OS_task_table_sem));
     return OS_SUCCESS;
     
 } /* end OS_TaskCreate */
+
 
 /*--------------------------------------------------------------------------------------
      Name: OS_TaskDelete
@@ -502,64 +460,50 @@ int32 OS_TaskCreate (uint32 *task_id, const char *task_name, osal_task_entry fun
 
 int32 OS_TaskDelete (uint32 task_id)
 {    
-    FuncPtr_t         FunctionPointer;
-    rtems_status_code status;
-    
-    /* 
-    ** Check to see if the task_id given is valid 
-    */
-    if (task_id >= OS_MAX_TASKS || OS_task_table[task_id].free == TRUE)
-    {
-        return OS_ERR_INVALID_ID;
-    }
+    /* Check to see if the task_id given is valid */
 
-    /*
-    ** Call the task Delete hook if there is one.
-    */
-    if ( OS_task_table[task_id].delete_hook_pointer != NULL)
-    {
-       FunctionPointer = (FuncPtr_t)OS_task_table[task_id].delete_hook_pointer;
-       (*FunctionPointer)();
-    }
+    if (task_id >= OS_MAX_TASKS || OS_task_table[task_id].free == TRUE)
+            return OS_ERR_INVALID_ID;
 
     /* Try to delete the task */
+
     if (rtems_task_delete(OS_task_table[task_id].id) != RTEMS_SUCCESSFUL)
-    {
-	return OS_ERROR;
-    }
+		{
+			return OS_ERROR;
+		}    
     
     /*
      * Now that the task is deleted, remove its 
      * "presence" in OS_task_table
     */
-    status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+
+    sem_wait( &(OS_task_table_sem));
     OS_task_table[task_id].free = TRUE;
     OS_task_table[task_id].id = UNINITIALIZED;
     strcpy(OS_task_table[task_id].name, "");
     OS_task_table[task_id].creator = UNINITIALIZED;
     OS_task_table[task_id].stack_size = UNINITIALIZED;
     OS_task_table[task_id].priority = UNINITIALIZED;
-    OS_task_table[task_id].delete_hook_pointer = NULL;            
-    status = rtems_semaphore_release (OS_task_table_sem);
+    sem_post( &(OS_task_table_sem));
     
     return OS_SUCCESS;
     
 }/* end OS_TaskDelete */
 /*--------------------------------------------------------------------------------------
-     Name:    OS_TaskExit
+     Name: OS_TaskExit
 
-     Purpose: Exits the calling task and removes it from the OS_task_table.
+    Purpose: Exits the calling task and removes it from the OS_task_table.
 
-     returns: Nothing 
+    returns: Nothing 
 ---------------------------------------------------------------------------------------*/
+
 void OS_TaskExit()
 {
-    uint32            task_id;
-    rtems_status_code status;
+    uint32 task_id;
 
     task_id = OS_TaskGetId();
 
-    status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_task_table_sem));
     
     OS_task_table[task_id].free = TRUE;
     OS_task_table[task_id].id = UNINITIALIZED;
@@ -567,8 +511,8 @@ void OS_TaskExit()
     OS_task_table[task_id].creator = UNINITIALIZED;
     OS_task_table[task_id].stack_size = UNINITIALIZED;
     OS_task_table[task_id].priority = UNINITIALIZED;
-    OS_task_table[task_id].delete_hook_pointer = NULL;            
-    status = rtems_semaphore_release (OS_task_table_sem); 
+    
+    sem_post( &(OS_task_table_sem));
 
     rtems_task_delete(RTEMS_SELF);
 
@@ -582,66 +526,68 @@ void OS_TaskExit()
    returns: OS_ERROR if sleep fails
             OS_SUCCESS if success
 ---------------------------------------------------------------------------------------*/
+
 int32 OS_TaskDelay (uint32 milli_second)
 {
-    struct timespec tm ;
+	struct timespec tm ;
 	
-    /* compute the second part */
-    tm.tv_sec  = (time_t) (milli_second / 1000) ;
-    /* take the residue and and convert to nano seconds */
-    tm.tv_nsec = (milli_second % 1000) * 1000000 ;
+	/* compute the second part */
+	tm.tv_sec  = (time_t) (milli_second / 1000) ;
+	/* take the residue and and convert to nano seconds */
+	tm.tv_nsec = (milli_second % 1000) * 1000000 ;
 	
-    if( nanosleep(&tm, NULL) == 0)
+	if( nanosleep(&tm, NULL) == 0)
     {
-       return(OS_SUCCESS) ;
+		return(OS_SUCCESS) ;
     }
-    else
+	else
     {
-       return(OS_ERROR) ;
+		return(OS_ERROR) ;
     }
 }/* end OS_TaskDelay */
+
+
 /*---------------------------------------------------------------------------------------
    Name: OS_TaskSetPriority
 
    Purpose: Sets the given task to a new priority
 
     returns: OS_ERR_INVALID_ID if the ID passed to it is invalid
-             OS_ERR_INVALID_PRIORITY if the priority is greater than the max 
+             OS__ERR_INVALID_PRIORITY if the priority is greater than the max 
              allowed
              OS_ERROR if the OS call to change the priority fails
              OS_SUCCESS if success
 ---------------------------------------------------------------------------------------*/
+
+
 int32 OS_TaskSetPriority (uint32 task_id, uint32 new_priority)
 {
     rtems_task_priority old_pri;
     
     /* Check Parameters */
+
     if(task_id >= OS_MAX_TASKS || OS_task_table[task_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     if (new_priority > MAX_PRIORITY)
-    {
         return OS_ERR_INVALID_PRIORITY;
-    }
     
     /* Set RTEMS Task Priority */
+
     if (rtems_task_set_priority(OS_task_table[task_id].id, new_priority, &old_pri)
        != RTEMS_SUCCESSFUL )
-    {
             return OS_ERROR;
-    }
+
     return OS_SUCCESS;
 
 }/* end OS_TaskSetPriority */
+
 
 /*---------------------------------------------------------------------------------------
    Name: OS_TaskRegister
   
    Purpose: Registers the calling task id with the task by adding the var to the tcb
-  			It searches the OS_task_table to find the task_id corresponding to the 
-                        tcb_id
+  			It searches the OS_task_table to find the task_id corresponding to the t            cb_id
             
    Returns: OS_ERR_INVALID_ID if there the specified ID could not be found
             OS_ERROR if the OS call fails
@@ -650,19 +596,19 @@ int32 OS_TaskSetPriority (uint32 task_id, uint32 new_priority)
 
 int32 OS_TaskRegister (void)
 {
-   rtems_id          rtems_task_id;
-   rtems_status_code rtems_status;
-   int 	              i;
-   uint32	      task_id;
+	rtems_id          rtems_task_id;
+	rtems_status_code rtems_status;
+	int 	          i;
+	uint32	          task_id;
 	
-   /* 
-   ** Get RTEMS Task Id
-   */
-   rtems_status = rtems_task_ident(RTEMS_SELF, 0, &rtems_task_id);
-   if ( rtems_status != RTEMS_SUCCESSFUL )
-   {		
-      return(OS_ERROR);
-   }
+	/* 
+	** Get RTEMS Task Id
+	*/
+	rtems_status = rtems_task_ident(RTEMS_SELF, 0, &rtems_task_id);
+	if ( rtems_status != RTEMS_SUCCESSFUL )
+    {		
+		return(OS_ERROR);
+    }
 	
     for(i = 0; i < OS_MAX_TASKS; i++)
     {
@@ -678,17 +624,16 @@ int32 OS_TaskRegister (void)
     }
 
     /* Add RTEMS Task Variable */
-    rtems_status = rtems_task_variable_add(
+
+	rtems_status = rtems_task_variable_add(
 		rtems_task_id,        /* rtems task id */
-		(void *)&OS_task_key, /* the task variable of type: void *task_variable */
+		(void *)&OS_task_key, /* the task variable of type :void ** task_variable */
 		NULL);                /* no function destructure is specified */
 	
-    if ( rtems_status != RTEMS_SUCCESSFUL )
-    {
-	return(OS_ERROR);
-    }
+	if ( rtems_status != RTEMS_SUCCESSFUL )
+		return(OS_ERROR);
     
-    OS_task_key = (void *)task_id;
+	 OS_task_key = task_id;
     
     return OS_SUCCESS;
 
@@ -719,20 +664,18 @@ uint32 OS_TaskGetId (void)
              OS_ERR_NAME_NOT_FOUND if the name wasn't found in the table
              OS_SUCCESS if SUCCESS
 ---------------------------------------------------------------------------------------*/
+
 int32 OS_TaskGetIdByName (uint32 *task_id, const char *task_name)
 {
     uint32 i;
 
     if (task_id == NULL || task_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
     /* we don't want to allow names too long because they won't be found at all */
+    
     if (strlen(task_name) >= OS_MAX_API_NAME)
-    {
-       return OS_ERR_NAME_TOO_LONG;
-    }
+            return OS_ERR_NAME_TOO_LONG;
 
     for (i = 0; i < OS_MAX_TASKS; i++)
     {
@@ -746,6 +689,7 @@ int32 OS_TaskGetIdByName (uint32 *task_id, const char *task_name)
     
     /* The name was not found in the table,
      *  or it was, and the task_id isn't valid anymore */
+    
     return OS_ERR_NAME_NOT_FOUND;
 
 }/* end OS_TaskGetIdByName */         
@@ -764,73 +708,28 @@ int32 OS_TaskGetIdByName (uint32 *task_id, const char *task_name)
 ---------------------------------------------------------------------------------------*/
 int32 OS_TaskGetInfo (uint32 task_id, OS_task_prop_t *task_prop)  
 {
-    rtems_status_code status;
-
     /* Check to see that the id given is valid */
+    
     if (task_id >= OS_MAX_TASKS || OS_task_table[task_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     if( task_prop == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
 
     /* put the info into the stucture */
-    status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_task_table_sem));
     task_prop -> creator =    OS_task_table[task_id].creator;
     task_prop -> stack_size = OS_task_table[task_id].stack_size;
     task_prop -> priority =   OS_task_table[task_id].priority;
     task_prop -> OStask_id =  (uint32) OS_task_table[task_id].id;
-    status = rtems_semaphore_release (OS_task_table_sem);    
+    
+    sem_post( &(OS_task_table_sem));
     
     strcpy(task_prop-> name, OS_task_table[task_id].name);
     
     return OS_SUCCESS;
     
 } /* end OS_TaskGetInfo */
-
-/*--------------------------------------------------------------------------------------
-     Name: OS_TaskInstallDeleteHandler
-
-    Purpose: Installs a handler for when the task is deleted.
-
-    returns: status
----------------------------------------------------------------------------------------*/
-int32 OS_TaskInstallDeleteHandler(void *function_pointer)
-{
-    uint32            task_id;
-    rtems_status_code status;
-
-    task_id = OS_TaskGetId();
-
-    if ( task_id >= OS_MAX_TASKS )
-    {
-       return(OS_ERR_INVALID_ID);
-    }
-
-    status = rtems_semaphore_obtain (OS_task_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
-    if ( OS_task_table[task_id].free != FALSE )
-    {
-       /* 
-       ** Somehow the calling task is not registered 
-       */
-       status = rtems_semaphore_release (OS_task_table_sem);
-       return(OS_ERR_INVALID_ID);
-    }
-
-    /*
-    ** Install the pointer
-    */
-    OS_task_table[task_id].delete_hook_pointer = function_pointer;    
-    
-    status = rtems_semaphore_release (OS_task_table_sem);
-
-    return(OS_SUCCESS);
-    
-}/*end OS_TaskInstallDeleteHandler */
 
 /****************************************************************************************
                                 MESSAGE QUEUE API
@@ -853,26 +752,22 @@ int32 OS_TaskInstallDeleteHandler(void *function_pointer)
 int32 OS_QueueCreate (uint32 *queue_id, const char *queue_name, uint32 queue_depth, 
                        uint32 data_size, uint32 flags)
 {
-    rtems_status_code  status;
-    rtems_name         r_name;
-    uint32             possible_qid;
-    uint32             i;
+	rtems_status_code  status;
+	rtems_name         r_name;
+    uint32 possible_qid;
+    uint32 i;
 
-    /* Check Parameters */
     if ( queue_id == NULL || queue_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
 
     /* we don't want to allow names too long*/
     /* if truncated, two names might be the same */
+
     if (strlen(queue_name) >= OS_MAX_API_NAME)
-    {
-       return OS_ERR_NAME_TOO_LONG;
-    }
+            return OS_ERR_NAME_TOO_LONG;
 
-    status = rtems_semaphore_obtain (OS_queue_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
+   /* Check Parameters */
+    sem_wait( &(OS_queue_table_sem));
     for(possible_qid = 0; possible_qid < OS_MAX_QUEUES; possible_qid++)
     {
         if (OS_queue_table[possible_qid].free == TRUE)
@@ -881,66 +776,68 @@ int32 OS_QueueCreate (uint32 *queue_id, const char *queue_name, uint32 queue_dep
     
     if( possible_qid >= OS_MAX_QUEUES || OS_queue_table[possible_qid].free != TRUE)
     {
-        status = rtems_semaphore_release (OS_queue_table_sem);
+        sem_post( &(OS_queue_table_sem));
+
         return OS_ERR_NO_FREE_IDS;
     }
 
     /* Check to see if the name is already taken */
+
     for (i = 0; i < OS_MAX_QUEUES; i++)
     {
         if ((OS_queue_table[i].free == FALSE) &&
                 strcmp ((char*) queue_name, OS_queue_table[i].name) == 0)
         {
-            status = rtems_semaphore_release (OS_queue_table_sem);
+            sem_post( &(OS_queue_table_sem));
             return OS_ERR_NAME_TAKEN;
         }
     }
 
     /* set the ID free to false to prevent other tasks from grabbing it */
     OS_queue_table[possible_qid].free = FALSE;   
-    status = rtems_semaphore_release (OS_queue_table_sem);
+    sem_post( &(OS_queue_table_sem));
 
-    /*
-    ** Create the message queue.
-    ** The queue attributes are set to default values; the waiting order
-    ** (RTEMS_FIFO or RTEMS_PRIORITY) is irrelevant since only one task waits
-    ** on each queue.
-    ** The RTEMS object name is not used by SB; it was set this way on ST5.
-    */
-    r_name = rtems_build_name('S','B',' ',' ');
-    status = rtems_message_queue_create(
-    r_name,                        /* 32-bit RTEMS object name; not used */
-    queue_depth,                   /* maximum number of messages in queue (queue depth) */
-    data_size,                     /* maximum size in bytes of a message */
-    RTEMS_FIFO|RTEMS_LOCAL,        /* attributes (default) */
-    &(OS_queue_table[possible_qid].id)  /* object ID returned for queue */
-    );
+	/*
+	** Create the message queue.
+	** The queue attributes are set to default values; the waiting order
+	** (RTEMS_FIFO or RTEMS_PRIORITY) is irrelevant since only one task waits
+	** on each queue.
+	** The RTEMS object name is not used by SB; it was set this way on ST5.
+	*/
+	r_name = rtems_build_name('S','B',' ',' ');
+	status = rtems_message_queue_create(
+		r_name,                        /* 32-bit RTEMS object name; not used */
+		queue_depth,                   /* maximum number of messages in queue (queue depth) */
+		data_size,                     /* maximum size in bytes of a message */
+		RTEMS_FIFO|RTEMS_LOCAL,        /* attributes (default) */
+		&(OS_queue_table[possible_qid].id)  /* object ID returned for queue */
+		);
 	
-    /*
-    ** If the operation failed, report the error 
-    */
-    if (status != RTEMS_SUCCESSFUL) 
-    {    
-       status = rtems_semaphore_obtain (OS_queue_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-       OS_queue_table[possible_qid].free = TRUE;   
-       status = rtems_semaphore_release (OS_queue_table_sem);
-       return OS_ERROR;
+		/*
+		** If the operation failed, report the error */
+	if (status != RTEMS_SUCCESSFUL) 
+    {    sem_wait( &(OS_queue_table_sem));
+         OS_queue_table[possible_qid].free = TRUE;   
+         sem_post( &(OS_queue_table_sem));
+    	return OS_ERROR;
     }
     
     /* Set the queue_id to the id that was found available*/
     /* Set the name of the queue, and the creator as well */
+    
     *queue_id = possible_qid;
      
-    status = rtems_semaphore_obtain (OS_queue_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+   sem_wait( &(OS_queue_table_sem));
 
-    OS_queue_table[*queue_id].free = FALSE;
-    strcpy( OS_queue_table[*queue_id].name, (char*) queue_name);
-    OS_queue_table[*queue_id].creator = OS_FindCreator();
-    status = rtems_semaphore_release (OS_queue_table_sem);
+   OS_queue_table[*queue_id].free = FALSE;
+   strcpy( OS_queue_table[*queue_id].name, (char*) queue_name);
+   OS_queue_table[*queue_id].creator = OS_FindCreator();
+   sem_post( &(OS_queue_table_sem));
 
-    return OS_SUCCESS;
+   return OS_SUCCESS;
 
 } /* end OS_QueueCreate */
+
 
 /*--------------------------------------------------------------------------------------
     Name: OS_QueueDelete
@@ -954,33 +851,31 @@ int32 OS_QueueCreate (uint32 *queue_id, const char *queue_name, uint32 queue_dep
     Notes: If There are messages on the queue, they will be lost and any subsequent
            calls to QueueGet or QueuePut to this queue will result in errors
 ---------------------------------------------------------------------------------------*/
+
 int32 OS_QueueDelete (uint32 queue_id)
 {
-    rtems_status_code status;
-
     /* Check to see if the queue_id given is valid */
+    
     if (queue_id >= OS_MAX_QUEUES || OS_queue_table[queue_id].free == TRUE)
-    {
-       return OS_ERR_INVALID_ID;
-    }
+            return OS_ERR_INVALID_ID;
 
     /* Try to delete the queue */
-    if (rtems_message_queue_delete(OS_queue_table[queue_id].id) != RTEMS_SUCCESSFUL)
-    {
-        return OS_ERROR;
-    }
+	if (rtems_message_queue_delete(OS_queue_table[queue_id].id) != RTEMS_SUCCESSFUL)
+		{
+			return OS_ERROR;
+		}
 	    
     /* 
      * Now that the queue is deleted, remove its "presence"
      * in OS_queue_table
     */
-    status = rtems_semaphore_obtain (OS_queue_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_queue_table_sem));
 
     OS_queue_table[queue_id].free = TRUE;
     strcpy(OS_queue_table[queue_id].name, "");
     OS_queue_table[queue_id].creator = UNINITIALIZED;
     OS_queue_table[queue_id].id = UNINITIALIZED;
-    status = rtems_semaphore_release (OS_queue_table_sem);
+    sem_post( &(OS_queue_table_sem));
 
     return OS_SUCCESS;
 
@@ -992,7 +887,7 @@ int32 OS_QueueDelete (uint32 queue_id)
 
    Purpose: Receive a message on a message queue.  Will pend or timeout on the receive.
    Returns: OS_ERR_INVALID_ID if the given ID does not exist
-            OS_INVALID_POINTER if a pointer passed in is NULL
+            OS_ERR_INVALID_POINTER if a pointer passed in is NULL
             OS_QUEUE_EMPTY if the Queue has no messages on it to be recieved
             OS_QUEUE_TIMEOUT if the timeout was OS_PEND and the time expired
             OS_QUEUE_INVALID_SIZE if the size copied from the queue was not correct
@@ -1003,21 +898,21 @@ int32 OS_QueueGet (uint32 queue_id, void *data, uint32 size, uint32 *size_copied
                     int32 timeout)
 {
     /* msecs rounded to the closest system tick count */
-    rtems_status_code  status;
-    rtems_interval     ticks;  
+	rtems_status_code  status;
+	rtems_interval     ticks;  
     rtems_id           rtems_queue_id;
     
     /* Check Parameters */
+
     if(queue_id >= OS_MAX_QUEUES || OS_queue_table[queue_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
-    else if( (data == NULL) || (size_copied == NULL) )
+    else
     {
-        return OS_INVALID_POINTER;
+        if( (data == NULL) || (size_copied == NULL) )
+            return OS_INVALID_POINTER;
     }
 
-    rtems_queue_id = OS_queue_table[queue_id].id; 
+   rtems_queue_id = OS_queue_table[queue_id].id; 
     
     /* Get Message From Message Queue */
     if(timeout == OS_PEND)
@@ -1025,75 +920,70 @@ int32 OS_QueueGet (uint32 queue_id, void *data, uint32 size, uint32 *size_copied
        /*
        ** Pend forever until a message arrives.
        */
-       status = rtems_message_queue_receive(
-		rtems_queue_id,            /* message queue descriptor */
-		data,                                    /* pointer to message buffer */
-		size_copied,                             /* returned size of message */
-		RTEMS_WAIT,                           /* wait option */
-		RTEMS_NO_TIMEOUT                         /* timeout */
-		);
+		status = rtems_message_queue_receive(
+			rtems_queue_id,            /* message queue descriptor */
+			data,                                    /* pointer to message buffer */
+			size_copied,                             /* returned size of message */
+			RTEMS_WAIT,                           /* wait option */
+			RTEMS_NO_TIMEOUT                         /* timeout */
+			);
     }
-    else if (timeout == OS_CHECK)
+    
+    else if(timeout == OS_CHECK)
     {
 	/*
 	** Get a message without waiting.  If no message is present,
 	** return with a failure indication.
-	*/
-	status = rtems_message_queue_receive(
-   		   rtems_queue_id,            /* message queue descriptor */
-		   data,                                    /* pointer to message buffer */
-		   size_copied,                             /* returned size of message */
-		   RTEMS_NO_WAIT,                           /* wait option */
-		   RTEMS_NO_TIMEOUT                         /* timeout */
-		);
+		*/
+		status = rtems_message_queue_receive(
+			rtems_queue_id,            /* message queue descriptor */
+			data,                                    /* pointer to message buffer */
+			size_copied,                             /* returned size of message */
+			RTEMS_NO_WAIT,                           /* wait option */
+			RTEMS_NO_TIMEOUT                         /* timeout */
+			);
 		
-	if (status == RTEMS_UNSATISFIED)
-        {
-	    return OS_QUEUE_EMPTY;
-        } 
+		if (status == RTEMS_UNSATISFIED)
+			return OS_QUEUE_EMPTY;
         
-    }
-    else
-    {
+        
+    }/* else if*/
+        else
+        {
 	/*
 	** Wait for up to a specified amount of time for a message to arrive.
 	** If no message arrives within the timeout interval, return with a
 	** failure indication.
 	*/
-        ticks = OS_Milli2Ticks(timeout);
-        status = rtems_message_queue_receive(
-		rtems_queue_id,                     /* message queue descriptor */
-		data,                               /* pointer to message buffer */
-		size_copied,                        /* returned size of message */
-		RTEMS_WAIT,                         /* wait option */
-		ticks                               /* timeout */
-		);
+		    ticks = OS_Milli2Ticks(timeout);
+		    status = rtems_message_queue_receive(
+			rtems_queue_id,                     /* message queue descriptor */
+			data,                               /* pointer to message buffer */
+			size_copied,                        /* returned size of message */
+			RTEMS_WAIT,                         /* wait option */
+			ticks                               /* timeout */
+			);
 		
-        if (status == RTEMS_TIMEOUT)
-        {
- 	    return OS_QUEUE_TIMEOUT;       
-        }
+		    if (status == RTEMS_TIMEOUT)
+ 			    return OS_QUEUE_TIMEOUT;       
         
-    }/* else */
+        }/* else */
    
    
-    /*
-    ** Check the status of the read operation.  If a valid message was
-    ** obtained, indicate success.  
-    */
-    if (status == RTEMS_SUCCESSFUL && *size_copied == size)
+	  /*
+	  ** Check the status of the read operation.  If a valid message was
+	  ** obtained, indicate success.  If an error occurred, send an event
+	  ** to indicate an unexpected queue read error.
+	*/
+	if (status == RTEMS_SUCCESSFUL && *size_copied == size)
     {
-	/* Success. */
-	return OS_SUCCESS;
-    }
-    else if ( status == RTEMS_SUCCESSFUL && *size_copied != size ) 
-    {
-       return OS_QUEUE_INVALID_SIZE;
-    } 
-    else 
-    {
-       return OS_ERROR;
-    }
+		/* Success. */
+		return OS_SUCCESS;
+	}
+	else 
+        {
+		return OS_QUEUE_INVALID_SIZE;
+        }
    
 }/* end OS_QueueGet */
 
@@ -1114,53 +1004,50 @@ int32 OS_QueueGet (uint32 queue_id, void *data, uint32 size, uint32 *size_copied
 
 int32 OS_QueuePut (uint32 queue_id, void *data, uint32 size, uint32 flags)
 {
-    rtems_status_code  status;
+	rtems_status_code  status;
     rtems_id           rtems_queue_id;
-
     /* Check Parameters */
+
     if(queue_id >= OS_MAX_QUEUES || OS_queue_table[queue_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     if (data == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
     rtems_queue_id = OS_queue_table[queue_id].id; 
 
     /* Get Message From RTEMS Message Queue */
 
-    /* Write the buffer pointer to the queue.  If an error occurred, report it
-    ** with the corresponding SB status code.
-    */
-    status = rtems_message_queue_send(
-		    rtems_queue_id,     /* message queue descriptor */
-                    data,                             /* pointer to message */
-                    size                              /* length of message */
-        	);
+	/** Write the buffer pointer to the queue.  If an error occurred, report it
+	** with the corresponding SB status code.
+	*/
+	status = rtems_message_queue_send(
+				    rtems_queue_id,     /* message queue descriptor */
+					data,                             /* pointer to message */
+					size                              /* length of message */
+					);
    
-    if (status == RTEMS_SUCCESSFUL) 
+	if (status == RTEMS_SUCCESSFUL) 
     {
-	return OS_SUCCESS;
+		return OS_SUCCESS;
     }
-    else if (status == RTEMS_TOO_MANY) 
+	else if (status == RTEMS_TOO_MANY) 
     {
 	/* 
 	** Queue is full. 
 	*/
-	return OS_QUEUE_FULL;
+		return OS_QUEUE_FULL;
     }
-    else 
+	else 
     {
 	/* 
 	** Unexpected error while writing to queue. 
 	*/
-	return OS_ERROR;
+		return OS_ERROR;
     }
     
 }/* end OS_QueuePut */
+
 
 /*--------------------------------------------------------------------------------------
     Name: OS_QueueGetIdByName
@@ -1179,16 +1066,13 @@ int32 OS_QueueGetIdByName (uint32 *queue_id, const char *queue_name)
     uint32 i;
 
     if(queue_id == NULL || queue_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
     /* a name too long wouldn't have been allowed in the first place
      * so we definitely won't find a name too long*/
+ 
     if (strlen(queue_name) >= OS_MAX_API_NAME)
-    {
-       return OS_ERR_NAME_TOO_LONG;
-    }
+            return OS_ERR_NAME_TOO_LONG;
     
     for (i = 0; i < OS_MAX_QUEUES; i++)
     {
@@ -1206,6 +1090,7 @@ int32 OS_QueueGetIdByName (uint32 *queue_id, const char *queue_name)
 
 }/* end OS_QueueGetIdByName */
 
+
 /*---------------------------------------------------------------------------------------
     Name: OS_QueueGetInfo
 
@@ -1219,24 +1104,20 @@ int32 OS_QueueGetIdByName (uint32 *queue_id, const char *queue_name)
 
 int32 OS_QueueGetInfo (uint32 queue_id, OS_queue_prop_t *queue_prop)  
 {
-    rtems_status_code status;
-
     /* Check to see that the id given is valid */
+    
     if (queue_prop == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
     if (queue_id >= OS_MAX_QUEUES || OS_queue_table[queue_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     /* put the info into the stucture */
-    status = rtems_semaphore_obtain (OS_queue_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_queue_table_sem));
     queue_prop -> creator =   OS_queue_table[queue_id].creator;
     strcpy(queue_prop -> name, OS_queue_table[queue_id].name);
-    status = rtems_semaphore_release (OS_queue_table_sem);
+    sem_post( &(OS_queue_table_sem));
+
 
     return OS_SUCCESS;
     
@@ -1266,25 +1147,22 @@ int32 OS_QueueGetInfo (uint32 queue_id, OS_queue_prop_t *queue_prop)
 int32 OS_BinSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initial_value, 
                         uint32 options)
 {
-    rtems_status_code status;
-    uint32            possible_semid;
-    uint32            i;
-    rtems_name        r_name;
+    /* the current candidate for the new sem id */
+    rtems_status_code return_code = 0;
+    uint32 possible_semid;
+    uint32 i;
 
     if (sem_id == NULL || sem_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
     /* we don't want to allow names too long*/
     /* if truncated, two names might be the same */
+    
     if (strlen(sem_name) >= OS_MAX_API_NAME)
-    {
             return OS_ERR_NAME_TOO_LONG;
-    }
     
     /* Check Parameters */
-    status = rtems_semaphore_obtain (OS_bin_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_bin_sem_table_sem));
 
     for (possible_semid = 0; possible_semid < OS_MAX_BIN_SEMAPHORES; possible_semid++)
     {
@@ -1295,7 +1173,7 @@ int32 OS_BinSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initial_
     if((possible_semid >= OS_MAX_BIN_SEMAPHORES) ||  
        (OS_bin_sem_table[possible_semid].free != TRUE))
     {
-        status = rtems_semaphore_release (OS_bin_sem_table_sem);
+        sem_post( &(OS_bin_sem_table_sem));
         return OS_ERR_NO_FREE_IDS;
     }
     
@@ -1305,52 +1183,37 @@ int32 OS_BinSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initial_
         if ((OS_bin_sem_table[i].free == FALSE) &&
                 strcmp ((char*) sem_name, OS_bin_sem_table[i].name) == 0)
         {
-            status = rtems_semaphore_release (OS_bin_sem_table_sem);
+            sem_post( &(OS_bin_sem_table_sem));
             return OS_ERR_NAME_TAKEN;
         }
     }
     OS_bin_sem_table[possible_semid].free = FALSE;
-    status = rtems_semaphore_release (OS_bin_sem_table_sem);
+    sem_post( &(OS_bin_sem_table_sem));
 
-    /* Check to make sure the sem value is going to be either 0 or 1 */
-    if (sem_initial_value < 0)
-    {
-        sem_initial_value = 0;
-    }
-    else
-    {
-        if (sem_initial_value > 1)
-        {
-            sem_initial_value = 1;
-        }
-    }
-    
     /* Create RTEMS Semaphore */
-    r_name = rtems_build_name(sem_name[0],sem_name[1],sem_name[2],sem_name[3]);
-    status = rtems_semaphore_create( r_name, sem_initial_value,0,
+
+    return_code = rtems_semaphore_create( sem_name, sem_initial_value,0,
                                           RTEMS_NO_PRIORITY_CEILING,
                                           &(OS_bin_sem_table[possible_semid].id));
     
     /* check if Create failed */
-    if ( status != RTEMS_SUCCESSFUL )
+	if ( return_code != RTEMS_SUCCESSFUL )
     {
-        status = rtems_semaphore_obtain (OS_bin_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        sem_wait( &(OS_bin_sem_table_sem));
         OS_bin_sem_table[possible_semid].free = TRUE;
-        status = rtems_semaphore_release (OS_bin_sem_table_sem);
-        return OS_SEM_FAILURE;
+        sem_post( &(OS_bin_sem_table_sem));
+		return OS_SEM_FAILURE;
     }
     /* Set the sem_id to the one that we found available */
     /* Set the name of the semaphore,creator and free as well */
 
     *sem_id = possible_semid;
     
-    status = rtems_semaphore_obtain (OS_bin_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_bin_sem_table_sem));
     OS_bin_sem_table[*sem_id].free = FALSE;
     strcpy(OS_bin_sem_table[*sem_id].name , (char*) sem_name);
     OS_bin_sem_table[*sem_id].creator = OS_FindCreator();
-    OS_bin_sem_table[*sem_id].max_value = 1;
-    OS_bin_sem_table[*sem_id].current_value = sem_initial_value;
-    status = rtems_semaphore_release (OS_bin_sem_table_sem);
+    sem_post( &(OS_bin_sem_table_sem));
     
     return OS_SUCCESS;
     
@@ -1363,38 +1226,36 @@ int32 OS_BinSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initial_
     Purpose: Deletes the specified Binary Semaphore.
 
     Returns: OS_ERR_INVALID_ID if the id passed in is not a valid binary semaphore
+             OS_ERR_SEM_NOT_FULL if the semahore is taken and cannot be deleted
              OS_SEM_FAILURE the OS call failed
              OS_SUCCESS if success
     
+    Notes: Since we can't delete a semaphore which is currently locked by some task 
+           (as it may ber crucial to completing the task), the semaphore must be full to
+           allow deletion.
 ---------------------------------------------------------------------------------------*/
 
 int32 OS_BinSemDelete (uint32 sem_id)
 {
-    rtems_status_code status;
-
     /* Check to see if this sem_id is valid */
     if (sem_id >= OS_MAX_BIN_SEMAPHORES || OS_bin_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
-    /* we must make sure the semaphore is given  to delete it */
-    rtems_semaphore_release(OS_bin_sem_table[sem_id].id);
+	/* we must make sure the semaphore is given  to delete it */
+     rtems_semaphore_release(OS_bin_sem_table[sem_id].id);
     
-    if (rtems_semaphore_delete( OS_bin_sem_table[sem_id].id) != RTEMS_SUCCESSFUL) 
-    {
-	return OS_SEM_FAILURE;
-    }
+	if (rtems_semaphore_delete( OS_bin_sem_table[sem_id].id) != RTEMS_SUCCESSFUL) 
+	{
+		return OS_SEM_FAILURE;
+	}
     
     /* Remove the Id from the table, and its name, so that it cannot be found again */
-    status = rtems_semaphore_obtain (OS_bin_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_bin_sem_table_sem));
     OS_bin_sem_table[sem_id].free = TRUE;
     strcpy(OS_bin_sem_table[sem_id].name , "");
     OS_bin_sem_table[sem_id].creator = UNINITIALIZED;
     OS_bin_sem_table[sem_id].id = UNINITIALIZED;
-    OS_bin_sem_table[sem_id].max_value = 0;
-    OS_bin_sem_table[sem_id].current_value = 0;
-    status = rtems_semaphore_release (OS_bin_sem_table_sem);
+    sem_post( &(OS_bin_sem_table_sem));
 
     return OS_SUCCESS;
 
@@ -1405,8 +1266,7 @@ int32 OS_BinSemDelete (uint32 sem_id)
 
     Purpose: The function  unlocks the semaphore referenced by sem_id by performing
              a semaphore unlock operation on that semaphore.If the semaphore value 
-             resulting from this operation is positive, then no threads were blocked
-             waiting for the semaphore to become unlocked; the semaphore value is
+             resulting from this operation is positive, then no threads were blocked             waiting for the semaphore to become unlocked; the semaphore value is
              simply incremented for this semaphore.
 
     
@@ -1420,31 +1280,22 @@ int32 OS_BinSemDelete (uint32 sem_id)
 int32 OS_BinSemGive (uint32 sem_id)
 {
     /* Check Parameters */
+
     if(sem_id >= OS_MAX_BIN_SEMAPHORES || OS_bin_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     /* Give Semaphore */
-    if ( OS_bin_sem_table[sem_id].current_value  < OS_bin_sem_table[sem_id].max_value )
+    
+	if( rtems_semaphore_release(OS_bin_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
     {
-        if( rtems_semaphore_release(OS_bin_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
-        {
-            return OS_SEM_FAILURE ;
-        }
-        else
-        {
-            OS_bin_sem_table[sem_id].current_value ++;
-            return  OS_SUCCESS ;
-        }
+		return OS_SEM_FAILURE ;
     }
-    else /* just drop the release call */
+	else
     {
-        return OS_SUCCESS;
+		return  OS_SUCCESS ;
     }
 
 }/* end OS_BinSemGive */
-
 /*---------------------------------------------------------------------------------------
     Name: OS_BinSemFlush
 
@@ -1461,19 +1312,19 @@ int32 OS_BinSemGive (uint32 sem_id)
 int32 OS_BinSemFlush (uint32 sem_id)
 {
     /* Check Parameters */
+
     if(sem_id >= OS_MAX_BIN_SEMAPHORES || OS_bin_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     /* Give Semaphore */
-    if( rtems_semaphore_flush(OS_bin_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
+    
+	if( rtems_semaphore_flush(OS_bin_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
     {
-	return OS_SEM_FAILURE ;
+		return OS_SEM_FAILURE ;
     }
-    else
+	else
     {
-	return  OS_SUCCESS ;
+		return  OS_SUCCESS ;
     }
 
 }/* end OS_BinSemFlush */
@@ -1498,21 +1349,15 @@ int32 OS_BinSemFlush (uint32 sem_id)
 int32 OS_BinSemTake (uint32 sem_id)
 {
     /* Check Parameters */
-    if(sem_id >= OS_MAX_BIN_SEMAPHORES  || OS_bin_sem_table[sem_id].free == TRUE)
-    {
-        return OS_ERR_INVALID_ID;
-    }
 
-    /* decrement in anticipation of a good take, because if it is, the task may block and 
-     it won't be able to decrement the counter */
-    OS_bin_sem_table[sem_id].current_value --;
-    
-    if ( rtems_semaphore_obtain(OS_bin_sem_table[sem_id].id, RTEMS_WAIT, 
+    if(sem_id >= OS_MAX_BIN_SEMAPHORES  || OS_bin_sem_table[sem_id].free == TRUE)
+        return OS_ERR_INVALID_ID;
+
+    /* Note to self: Check out sem wait in the manual */
+	if ( rtems_semaphore_obtain(OS_bin_sem_table[sem_id].id, RTEMS_WAIT, 
                                 RTEMS_NO_TIMEOUT)!= RTEMS_SUCCESSFUL)
     {
-        /* undo the premature decrement */
-        OS_bin_sem_table[sem_id].current_value ++;
-        return OS_SEM_FAILURE;
+	    return OS_SEM_FAILURE;
     }
     else
     {
@@ -1520,6 +1365,8 @@ int32 OS_BinSemTake (uint32 sem_id)
     }
 
 }/* end OS_BinSemTake */
+
+
 /*---------------------------------------------------------------------------------------
     Name: OS_BinSemTimedWait
     
@@ -1535,43 +1382,39 @@ int32 OS_BinSemTake (uint32 sem_id)
              OS_ERR_INVALID_ID if the ID passed in is not a valid semaphore ID
 ----------------------------------------------------------------------------------------*/
 
+
 int32 OS_BinSemTimedWait (uint32 sem_id, uint32 msecs)
 {
-    rtems_status_code status;
-    uint32            TimeInTicks;
+    /* msecs rounded to the closest system tick count */
+  	rtems_status_code ret_val ;
+	uint32 TimeInTicks;
 
     /* Check Parameters */
+
     if( (sem_id >= OS_MAX_BIN_SEMAPHORES) || (OS_bin_sem_table[sem_id].free == TRUE) )
-    {
         return OS_ERR_INVALID_ID;	
-    }
 		
-    TimeInTicks = OS_Milli2Ticks(msecs);
+	TimeInTicks = OS_Milli2Ticks(msecs);
     
-    OS_bin_sem_table[sem_id].current_value --;
-
-    status  = 	rtems_semaphore_obtain(OS_bin_sem_table[sem_id].id, RTEMS_WAIT,TimeInTicks ) ;
+	ret_val  =  
+		rtems_semaphore_obtain(OS_bin_sem_table[sem_id].id, RTEMS_WAIT,TimeInTicks ) ;
 	
-    switch (status)
+	switch (ret_val)
     {
-        case RTEMS_TIMEOUT :
-            
-            OS_bin_sem_table[sem_id].current_value ++;
-            status = OS_SEM_TIMEOUT ;
-            break ;
+    case RTEMS_TIMEOUT :
+		ret_val = OS_SEM_TIMEOUT ;
+		break ;
 		
-        case RTEMS_SUCCESSFUL :
-            status = OS_SUCCESS ;
-            break ;
-
-         default :
-            
-            OS_bin_sem_table[sem_id].current_value ++;
-            status = OS_SEM_FAILURE ;
-            break ;
+    case RTEMS_SUCCESSFUL :
+		ret_val = OS_SUCCESS ;
+		break ;
+		
+    default :
+		ret_val = OS_SEM_FAILURE ;
+		break ;
+		
     }
-    return status;
-
+	return ret_val;
 }/* end OS_BinSemTimedWait */
 
 /*--------------------------------------------------------------------------------------
@@ -1591,18 +1434,13 @@ int32 OS_BinSemGetIdByName (uint32 *sem_id, const char *sem_name)
     uint32 i;
 
     if (sem_id == NULL || sem_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
-    /* 
-    ** a name too long wouldn't have been allowed in the first place
-    ** so we definitely won't find a name too long
-    */
+    /* a name too long wouldn't have been allowed in the first place
+     * so we definitely won't find a name too long*/
+    
     if (strlen(sem_name) >= OS_MAX_API_NAME)
-    {
-        return OS_ERR_NAME_TOO_LONG;
-    }
+            return OS_ERR_NAME_TOO_LONG;
 
     for (i = 0; i < OS_MAX_BIN_SEMAPHORES; i++)
     {
@@ -1613,10 +1451,9 @@ int32 OS_BinSemGetIdByName (uint32 *sem_id, const char *sem_name)
             return OS_SUCCESS;
         }
     }
-    /* 
-    ** The name was not found in the table,
-    ** or it was, and the sem_id isn't valid anymore 
-    */
+    /* The name was not found in the table,
+     *  or it was, and the sem_id isn't valid anymore */
+
     return OS_ERR_NAME_NOT_FOUND;
     
 }/* end OS_BinSemGetIdByName */
@@ -1634,27 +1471,20 @@ int32 OS_BinSemGetIdByName (uint32 *sem_id, const char *sem_name)
 
 int32 OS_BinSemGetInfo (uint32 sem_id, OS_bin_sem_prop_t *bin_prop)  
 {
-    rtems_status_code status;
-
     /* Check to see that the id given is valid */
+    
     if (sem_id >= OS_MAX_BIN_SEMAPHORES || OS_bin_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     if (bin_prop == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
 
     /* put the info into the stucture */
-    status = rtems_semaphore_obtain (OS_bin_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_bin_sem_table_sem));
 
     bin_prop ->creator =    OS_bin_sem_table[sem_id].creator;
     strcpy(bin_prop-> name, OS_bin_sem_table[sem_id].name);
-    bin_prop -> value = OS_bin_sem_table[sem_id].current_value ;
-    
-    status = rtems_semaphore_release (OS_bin_sem_table_sem);
+    sem_post( &(OS_bin_sem_table_sem));
 
     return OS_SUCCESS;
     
@@ -1672,6 +1502,7 @@ int32 OS_BinSemGetInfo (uint32 sem_id, OS_bin_sem_prop_t *bin_prop)
             OS_ERR_NAME_TAKEN if this is already the name of a countary semaphore
             OS_SEM_FAILURE if the OS call failed
             OS_SUCCESS if success
+            
 
    Notes: options is an unused parameter 
 ---------------------------------------------------------------------------------------*/
@@ -1679,40 +1510,22 @@ int32 OS_BinSemGetInfo (uint32 sem_id, OS_bin_sem_prop_t *bin_prop)
 int32 OS_CountSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initial_value, 
                         uint32 options)
 {
-    rtems_status_code status;
-    uint32            possible_semid;
-    rtems_name        r_name;
-    uint32            i;
+    /* the current candidate for the new sem id */
+    rtems_status_code return_code = 0;
+    uint32 possible_semid;
+    uint32 i;
 
-    /* 
-    ** Check Parameters 
-    */
     if (sem_id == NULL || sem_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
-   
-    /*
-    ** Verify that the semaphore maximum value is not too high
-    */
-    if ( sem_initial_value > MAX_SEM_VALUE )
-    {
-        return OS_INVALID_SEM_VALUE;
-    }
- 
-    /*
-    **  we don't want to allow names too long
-    ** if truncated, two names might be the same 
-    */
+    
+    /* we don't want to allow names too long*/
+    /* if truncated, two names might be the same */
+    
     if (strlen(sem_name) >= OS_MAX_API_NAME)
-    {
-        return OS_ERR_NAME_TOO_LONG;
-    }
-   
-    /*
-    ** Lock
-    */ 
-    status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+            return OS_ERR_NAME_TOO_LONG;
+    
+    /* Check Parameters */
+    sem_wait( &(OS_count_sem_table_sem));
 
     for (possible_semid = 0; possible_semid < OS_MAX_COUNT_SEMAPHORES; possible_semid++)
     {
@@ -1723,7 +1536,7 @@ int32 OS_CountSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initia
     if((possible_semid >= OS_MAX_COUNT_SEMAPHORES) ||  
        (OS_count_sem_table[possible_semid].free != TRUE))
     {
-        status = rtems_semaphore_release (OS_count_sem_table_sem);
+        sem_post( &(OS_count_sem_table_sem));
         return OS_ERR_NO_FREE_IDS;
     }
     
@@ -1731,50 +1544,45 @@ int32 OS_CountSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initia
     for (i = 0; i < OS_MAX_COUNT_SEMAPHORES; i++)
     {
         if ((OS_count_sem_table[i].free == FALSE) &&
-             strcmp ((char*) sem_name, OS_count_sem_table[i].name) == 0)
+                strcmp ((char*) sem_name, OS_count_sem_table[i].name) == 0)
         {
-            status = rtems_semaphore_release (OS_count_sem_table_sem);
+            sem_post( &(OS_count_sem_table_sem));
             return OS_ERR_NAME_TAKEN;
         }
     }
     OS_count_sem_table[possible_semid].free = FALSE;
-    status = rtems_semaphore_release (OS_count_sem_table_sem);
+    sem_post( &(OS_count_sem_table_sem));
 
     /* Create RTEMS Semaphore */
-    r_name = rtems_build_name(sem_name[0],sem_name[1],sem_name[2],sem_name[3]);
-    status = rtems_semaphore_create( r_name, sem_initial_value, 0,
+
+    return_code = rtems_semaphore_create( sem_name, sem_initial_value,0,
                                           RTEMS_NO_PRIORITY_CEILING,
                                           &(OS_count_sem_table[possible_semid].id));
     
     /* check if Create failed */
-    if ( status != RTEMS_SUCCESSFUL )
+	if ( return_code != RTEMS_SUCCESSFUL )
     {        
-        status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        sem_wait( &(OS_count_sem_table_sem));
         OS_count_sem_table[possible_semid].free = TRUE;
-        status = rtems_semaphore_release (OS_count_sem_table_sem);
+        sem_post( &(OS_count_sem_table_sem));
 
-	return OS_SEM_FAILURE;
+		return OS_SEM_FAILURE;
     }
     /* Set the sem_id to the one that we found available */
     /* Set the name of the semaphore,creator and free as well */
 
     *sem_id = possible_semid;
     
-    status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_count_sem_table_sem));
     OS_count_sem_table[*sem_id].free = FALSE;
     strcpy(OS_count_sem_table[*sem_id].name , (char*) sem_name);
     OS_count_sem_table[*sem_id].creator = OS_FindCreator();
-    OS_count_sem_table[*sem_id].max_value = MAX_SEM_VALUE; 
-    OS_count_sem_table[*sem_id].current_value = sem_initial_value;
-   
-    /*
-    ** Unlock
-    */ 
-    status = rtems_semaphore_release (OS_count_sem_table_sem);
+    sem_post( &(OS_count_sem_table_sem));
     
     return OS_SUCCESS;
     
 }/* end OS_CountSemCreate */
+
 
 /*--------------------------------------------------------------------------------------
      Name: OS_CountSemDelete
@@ -1782,42 +1590,37 @@ int32 OS_CountSemCreate (uint32 *sem_id, const char *sem_name, uint32 sem_initia
     Purpose: Deletes the specified Counting Semaphore.
 
     Returns: OS_ERR_INVALID_ID if the id passed in is not a valid countary semaphore
+             OS_ERR_SEM_NOT_FULL if the semahore is taken and cannot be deleted
              OS_SEM_FAILURE the OS call failed
              OS_SUCCESS if success
     
+    Notes: Since we can't delete a semaphore which is currently locked by some task 
+           (as it may ber crucial to completing the task), the semaphore must be full to
+           allow deletion.
 ---------------------------------------------------------------------------------------*/
 
 int32 OS_CountSemDelete (uint32 sem_id)
 {
-    rtems_status_code status;
-
-    /* 
-    ** Check to see if this sem_id is valid 
-    */
+    /* Check to see if this sem_id is valid */
     if (sem_id >= OS_MAX_COUNT_SEMAPHORES || OS_count_sem_table[sem_id].free == TRUE)
-    {
-      return OS_ERR_INVALID_ID;
-    }
+        return OS_ERR_INVALID_ID;
 
-    /* we must make sure the semaphore is given  to delete it */
-    rtems_semaphore_release(OS_count_sem_table[sem_id].id);
+
+	/* we must make sure the semaphore is given  to delete it */
+     rtems_semaphore_release(OS_bin_sem_table[sem_id].id);
     
-    if (rtems_semaphore_delete( OS_count_sem_table[sem_id].id) != RTEMS_SUCCESSFUL) 
-    {
-	return OS_SEM_FAILURE;
-    }
+	if (rtems_semaphore_delete( OS_count_sem_table[sem_id].id) != RTEMS_SUCCESSFUL) 
+	{
+		return OS_SEM_FAILURE;
+	}
     
     /* Remove the Id from the table, and its name, so that it cannot be found again */
-    status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
+    sem_wait( &(OS_count_sem_table_sem));
     OS_count_sem_table[sem_id].free = TRUE;
     strcpy(OS_count_sem_table[sem_id].name , "");
     OS_count_sem_table[sem_id].creator = UNINITIALIZED;
     OS_count_sem_table[sem_id].id = UNINITIALIZED;
-    OS_count_sem_table[sem_id].max_value = 0;
-    OS_count_sem_table[sem_id].current_value = 0;
-    
-    status = rtems_semaphore_release (OS_count_sem_table_sem);
+    sem_post( &(OS_count_sem_table_sem));
 
     return OS_SUCCESS;
 
@@ -1828,8 +1631,7 @@ int32 OS_CountSemDelete (uint32 sem_id)
 
     Purpose: The function  unlocks the semaphore referenced by sem_id by performing
              a semaphore unlock operation on that semaphore.If the semaphore value 
-             resulting from this operation is positive, then no threads were blocked             
-             waiting for the semaphore to become unlocked; the semaphore value is
+             resulting from this operation is positive, then no threads were blocked             waiting for the semaphore to become unlocked; the semaphore value is
              simply incremented for this semaphore.
 
     
@@ -1842,46 +1644,21 @@ int32 OS_CountSemDelete (uint32 sem_id)
 
 int32 OS_CountSemGive (uint32 sem_id)
 {
-    rtems_status_code status;
-    int32             return_code = OS_SUCCESS;
+    /* Check Parameters */
 
-    /* 
-    ** Check Parameters 
-    */
     if(sem_id >= OS_MAX_COUNT_SEMAPHORES || OS_count_sem_table[sem_id].free == TRUE)
-    {
-       return OS_ERR_INVALID_ID;
-    }
+        return OS_ERR_INVALID_ID;
 
-    /*
-    ** Lock
-    */ 
-    status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
-    /* If the semaphore isn't totally full, perform the give */
-    if ( OS_count_sem_table[sem_id].current_value  < OS_count_sem_table[sem_id].max_value )
-    {
-        if( rtems_semaphore_release(OS_count_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
-        {
-            return_code = OS_SEM_FAILURE ;
-        }
-        else
-        {
-            OS_count_sem_table[sem_id].current_value ++;
-            return_code =  OS_SUCCESS ;
-        }
-    }
-    else /* drop the release call */
-    {
-        return_code =  OS_SUCCESS;
-    }
+    /* Give Semaphore */
     
-    /*
-    ** Unlock
-    */ 
-    status = rtems_semaphore_release (OS_count_sem_table_sem);
-  
-    return(return_code);
+	if( rtems_semaphore_release(OS_count_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
+    {
+		return OS_SEM_FAILURE ;
+    }
+	else
+    {
+		return  OS_SUCCESS ;
+    }
 
 }/* end OS_CountSemGive */
 
@@ -1904,40 +1681,21 @@ int32 OS_CountSemGive (uint32 sem_id)
 
 int32 OS_CountSemTake (uint32 sem_id)
 {
-    rtems_status_code status;
-    int32             return_code = OS_SUCCESS;
-
     /* Check Parameters */
+
     if(sem_id >= OS_MAX_COUNT_SEMAPHORES  || OS_count_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
-    /*
-    ** Lock
-    */ 
-    status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
-    /* 
-    ** decrement in anticipation of a good take, because if it is, the task may block and 
-    **  it won't be able to decrement the counter 
-    */
-    OS_count_sem_table[sem_id].current_value --;
-    
-    if ( rtems_semaphore_obtain(OS_count_sem_table[sem_id].id, RTEMS_WAIT, 
+    /* Note to self: Check out sem wait in the manual */
+	if ( rtems_semaphore_obtain(OS_count_sem_table[sem_id].id, RTEMS_WAIT, 
                                 RTEMS_NO_TIMEOUT)!= RTEMS_SUCCESSFUL)
     {
-        /* undo the premature decrement */
-        OS_count_sem_table[sem_id].current_value ++;
-        return_code =  OS_SEM_FAILURE;
+	    return OS_SEM_FAILURE;
     }
-
-    /*
-    ** Unlock
-    */ 
-    status = rtems_semaphore_release (OS_count_sem_table_sem);
-
-    return(return_code);
+    else
+    {
+        return OS_SUCCESS;
+    }
 
 }/* end OS_CountSemTake */
 
@@ -1957,55 +1715,39 @@ int32 OS_CountSemTake (uint32 sem_id)
              OS_ERR_INVALID_ID if the ID passed in is not a valid semaphore ID
 ----------------------------------------------------------------------------------------*/
 
+
 int32 OS_CountSemTimedWait (uint32 sem_id, uint32 msecs)
 {
-    rtems_status_code status;
-    int32             return_code = OS_SUCCESS;
-    uint32            TimeInTicks;
+    /* msecs rounded to the closest system tick count */
+  	rtems_status_code ret_val ;
+	uint32 TimeInTicks;
 
     /* Check Parameters */
+
     if( (sem_id >= OS_MAX_COUNT_SEMAPHORES) || (OS_count_sem_table[sem_id].free == TRUE) )
-    {
         return OS_ERR_INVALID_ID;	
-    }
 		
-    TimeInTicks = OS_Milli2Ticks(msecs);
+	TimeInTicks = OS_Milli2Ticks(msecs);
     
-    /*
-    ** Lock
-    */ 
-    status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
-    /* 
-    ** premature decrement, just like regurlar SemTake 
-    */
-    OS_count_sem_table[sem_id].current_value --;
-    status = rtems_semaphore_obtain(OS_count_sem_table[sem_id].id, RTEMS_WAIT,TimeInTicks ) ;
-    switch (status)
+	ret_val  =  
+		rtems_semaphore_obtain(OS_count_sem_table[sem_id].id, RTEMS_WAIT,TimeInTicks ) ;
+	
+	switch (ret_val)
     {
-        case RTEMS_TIMEOUT :
-           OS_count_sem_table[sem_id].current_value ++;   
-	   return_code = OS_SEM_TIMEOUT ;
-           break ;
+    case RTEMS_TIMEOUT :
+		ret_val = OS_SEM_TIMEOUT ;
+		break ;
 		
-        case RTEMS_SUCCESSFUL :
-           return_code = OS_SUCCESS ;
-           break ;
+    case RTEMS_SUCCESSFUL :
+		ret_val = OS_SUCCESS ;
+		break ;
 		
-        default :
-           OS_count_sem_table[sem_id].current_value ++;   
-           return_code = OS_SEM_FAILURE ;
-           break ;
+    default :
+		ret_val = OS_SEM_FAILURE ;
+		break ;
 		
     }
-
-    /*
-    ** Unlock
-    */ 
-    status = rtems_semaphore_release (OS_count_sem_table_sem);
-
-    return(return_code);
-
+	return ret_val;
 }/* end OS_CountSemTimedWait */
 
 /*--------------------------------------------------------------------------------------
@@ -2025,18 +1767,13 @@ int32 OS_CountSemGetIdByName (uint32 *sem_id, const char *sem_name)
     uint32 i;
 
     if (sem_id == NULL || sem_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
-    /* 
-    ** a name too long wouldn't have been allowed in the first place
-    ** so we definitely won't find a name too long
-    */
+    /* a name too long wouldn't have been allowed in the first place
+     * so we definitely won't find a name too long*/
+    
     if (strlen(sem_name) >= OS_MAX_API_NAME)
-    {
-        return OS_ERR_NAME_TOO_LONG;
-    }
+            return OS_ERR_NAME_TOO_LONG;
 
     for (i = 0; i < OS_MAX_COUNT_SEMAPHORES; i++)
     {
@@ -2047,11 +1784,9 @@ int32 OS_CountSemGetIdByName (uint32 *sem_id, const char *sem_name)
             return OS_SUCCESS;
         }
     }
+    /* The name was not found in the table,
+     *  or it was, and the sem_id isn't valid anymore */
 
-    /* 
-    ** The name was not found in the table,
-    **  or it was, and the sem_id isn't valid anymore 
-    */
     return OS_ERR_NAME_NOT_FOUND;
     
 }/* end OS_CountSemGetIdByName */
@@ -2069,35 +1804,20 @@ int32 OS_CountSemGetIdByName (uint32 *sem_id, const char *sem_name)
 
 int32 OS_CountSemGetInfo (uint32 sem_id, OS_count_sem_prop_t *count_prop)  
 {
-    rtems_status_code status; 
-
     /* Check to see that the id given is valid */
+    
     if (sem_id >= OS_MAX_COUNT_SEMAPHORES || OS_count_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     if (count_prop == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
-   
-    /*
-    ** Lock
-    */ 
-    status = rtems_semaphore_obtain (OS_count_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-    
-    /* 
-    ** Populate the info stucture 
-    */
+
+    /* put the info into the stucture */
+    sem_wait( &(OS_count_sem_table_sem));
+
     count_prop ->creator =    OS_count_sem_table[sem_id].creator;
     strcpy(count_prop-> name, OS_count_sem_table[sem_id].name);
-    count_prop -> value = OS_count_sem_table[sem_id].current_value;
-   
-    /*
-    ** Unlock 
-    */ 
-    status = rtems_semaphore_release (OS_count_sem_table_sem);
+    sem_post( &(OS_count_sem_table_sem));
 
     return OS_SUCCESS;
     
@@ -2125,27 +1845,25 @@ int32 OS_CountSemGetInfo (uint32 sem_id, OS_count_sem_prop_t *count_prop)
 
 int32 OS_MutSemCreate (uint32 *sem_id, const char *sem_name, uint32 options)
 {
-    uint32	        possible_semid;
-    uint32	        i;	    
-    rtems_status_code   status; 
-    rtems_name          r_name;
+	int                 return_code;
+	int                 mutex_init_attr_status;
+	int                 mutex_setprotocol_status ;
+	pthread_mutexattr_t mutex_attr ;    
+	uint32				possible_semid;
+	uint32				i;	    
 
     /* Check Parameters */
-    if (sem_id == NULL || sem_name == NULL)
-    {
-        return OS_INVALID_POINTER;
-    }
-    
-    /* 
-    ** we don't want to allow names too long
-    ** if truncated, two names might be the same 
-    */
-    if (strlen(sem_name) >= OS_MAX_API_NAME)
-    {
-        return OS_ERR_NAME_TOO_LONG;
-    }
 
-    status = rtems_semaphore_obtain (OS_mut_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    if (sem_id == NULL || sem_name == NULL)
+        return OS_INVALID_POINTER;
+    
+    /* we don't want to allow names too long*/
+    /* if truncated, two names might be the same */
+    
+    if (strlen(sem_name) >= OS_MAX_API_NAME)
+            return OS_ERR_NAME_TOO_LONG;
+
+    sem_wait( &(OS_mut_sem_table_sem));
 
     for (possible_semid = 0; possible_semid < OS_MAX_MUTEXES; possible_semid++)
     {
@@ -2156,53 +1874,78 @@ int32 OS_MutSemCreate (uint32 *sem_id, const char *sem_name, uint32 options)
     if( (possible_semid >= OS_MAX_MUTEXES) ||
         (OS_mut_sem_table[possible_semid].free != TRUE) )
     {
-        status = rtems_semaphore_release (OS_mut_sem_table_sem);
+        sem_post( &(OS_mut_sem_table_sem));
         return OS_ERR_NO_FREE_IDS;
     }
     
+
     /* Check to see if the name is already taken */
+
+
     for (i = 0; i < OS_MAX_MUTEXES; i++)
     {
         if ((OS_mut_sem_table[i].free == FALSE) &&
                 strcmp ((char*)sem_name, OS_mut_sem_table[i].name) == 0)
         {
-            status = rtems_semaphore_release (OS_mut_sem_table_sem);
+            sem_post( &(OS_mut_sem_table_sem));
             return OS_ERR_NAME_TAKEN;
         }
     }
     
     OS_mut_sem_table[possible_semid].free = FALSE;
-    status = rtems_semaphore_release (OS_mut_sem_table_sem);
+    sem_post( &(OS_mut_sem_table_sem));
 
-    /*
-    ** Try to create the mutex
-    */
-    r_name = rtems_build_name(sem_name[0],sem_name[1],sem_name[2],sem_name[3]);
-    status = rtems_semaphore_create (r_name, 1,  
-                                    (RTEMS_PRIORITY | RTEMS_BINARY_SEMAPHORE | 
-                                     RTEMS_INHERIT_PRIORITY | RTEMS_NO_PRIORITY_CEILING | 
-                                     RTEMS_LOCAL), 
-                                     0,
-                                     &OS_mut_sem_table[possible_semid].id );
-    if ( status != RTEMS_SUCCESSFUL )
-    {
-        status = rtems_semaphore_obtain (OS_mut_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+	/* 
+	** init the attribute with default values 
+	*/
+	mutex_init_attr_status = pthread_mutexattr_init( &mutex_attr) ; 
+	if (mutex_init_attr_status)
+	{
+        sem_wait( &(OS_mut_sem_table_sem));
         OS_mut_sem_table[possible_semid].free = TRUE;
-        status = rtems_semaphore_release (OS_mut_sem_table_sem);
-        return OS_SEM_FAILURE;
-    } 
+        sem_post( &(OS_mut_sem_table_sem));
+		return OS_SEM_FAILURE;
+	}
+
+	/* not set the attribute to our desire : priority inherence */
+	mutex_setprotocol_status = pthread_mutexattr_setprotocol(&mutex_attr,PTHREAD_PRIO_INHERIT) ;
+	if (mutex_setprotocol_status)
+	{
+        sem_wait( &(OS_mut_sem_table_sem));
+        OS_mut_sem_table[possible_semid].free = TRUE;
+        sem_post( &(OS_mut_sem_table_sem));
+		return OS_SEM_FAILURE;
+	}
+	
+	/* 
+	** create the mutex 
+	*/
+	
+	/* 
+	** upon successful initialization, the state of the mutex becomes initialized and ulocked 
+	*/
+	return_code = pthread_mutex_init( ( &OS_mut_sem_table[possible_semid].id),&mutex_attr); 
+	if ( return_code != 0 )
+    { 
+        sem_wait( &(OS_mut_sem_table_sem));
+        OS_mut_sem_table[possible_semid].free = TRUE;
+        sem_post( &(OS_mut_sem_table_sem));
+		return OS_SEM_FAILURE;
+	}    
 
     *sem_id = possible_semid;
 
-    status = rtems_semaphore_obtain (OS_mut_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_mut_sem_table_sem));
     strcpy(OS_mut_sem_table[*sem_id].name, (char*)sem_name);
     OS_mut_sem_table[*sem_id].free = FALSE;
     OS_mut_sem_table[*sem_id].creator = OS_FindCreator();
-    status = rtems_semaphore_release (OS_mut_sem_table_sem);
+    sem_post( &(OS_mut_sem_table_sem));
+
     
     return OS_SUCCESS;
 
 }/* end OS_MutSemCreate */
+
 
 /*--------------------------------------------------------------------------------------
      Name: OS_MutSemDelete
@@ -2210,36 +1953,42 @@ int32 OS_MutSemCreate (uint32 *sem_id, const char *sem_name, uint32 options)
     Purpose: Deletes the specified Mutex Semaphore.
     
     Returns: OS_ERR_INVALID_ID if the id passed in is not a valid mutex
+             OS_ERR_SEM_NOT_FULL if the mutex is empty 
              OS_SEM_FAILURE if the OS call failed
              OS_SUCCESS if success
+
+    Notes: The mutex must be full to take it, so we have to check for fullness
 
 ---------------------------------------------------------------------------------------*/
 
 int32 OS_MutSemDelete (uint32 sem_id)
 {
-    rtems_status_code status; 
-
+    int status=-1;
     /* Check to see if this sem_id is valid   */
     if (sem_id >= OS_MAX_MUTEXES || OS_mut_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
-    if (rtems_semaphore_delete( OS_mut_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
-    {
-        /* clean up? */
+
+	/* we must make sure the mutex is given  to delete it */
+    pthread_mutex_unlock( &(OS_mut_sem_table[sem_id].id));
+
+    
+    status = pthread_mutex_destroy( &(OS_mut_sem_table[sem_id].id)); 
+    
+    /* 0 = success */   
+    if( status != 0)
         return OS_SEM_FAILURE;
-    }
-
     /* Delete its presence in the table */
-    status = rtems_semaphore_obtain (OS_mut_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    
+    sem_wait( &(OS_mut_sem_table_sem));
 
     OS_mut_sem_table[sem_id].free = TRUE;
     OS_mut_sem_table[sem_id].id = UNINITIALIZED;
     strcpy(OS_mut_sem_table[sem_id].name , "");
     OS_mut_sem_table[sem_id].creator = UNINITIALIZED;
-    status = rtems_semaphore_release (OS_mut_sem_table_sem);
+    sem_post( &(OS_mut_sem_table_sem));
 
+    
     return OS_SUCCESS;
 
 }/* end OS_MutSemDelete */
@@ -2264,22 +2013,21 @@ int32 OS_MutSemDelete (uint32 sem_id)
 int32 OS_MutSemGive (uint32 sem_id)
 {
     /* Check Parameters */
-    if(sem_id >= OS_MAX_MUTEXES || OS_mut_sem_table[sem_id].free == TRUE)
-    {
-        return OS_ERR_INVALID_ID;
-    }
 
-    /* Give the mutex */
-    if( rtems_semaphore_release(OS_mut_sem_table[sem_id].id) != RTEMS_SUCCESSFUL)
+    if(sem_id >= OS_MAX_MUTEXES || OS_mut_sem_table[sem_id].free == TRUE)
+        return OS_ERR_INVALID_ID;
+    
+	if(pthread_mutex_unlock(&(OS_mut_sem_table[sem_id].id)) != 0)
     {
-        return OS_SEM_FAILURE ;
+		return OS_SEM_FAILURE ;
     }
-    else
+	else
     {
-        return  OS_SUCCESS ;
+		return OS_SUCCESS ;
     }
 
 }/* end OS_MutSemGive */
+
 
 /*---------------------------------------------------------------------------------------
     Name: OS_MutSemTake
@@ -2287,8 +2035,7 @@ int32 OS_MutSemGive (uint32 sem_id)
     Purpose: The mutex object referenced by sem_id shall be locked by calling this
              function. If the mutex is already locked, the calling thread shall
              block until the mutex becomes available. This operation shall return
-             with the mutex object referenced by mutex in the locked state with the
-             calling thread as its owner.
+             with the mutex object referenced by mutex in the locked state with the              calling thread as its owner.
 
     Returns: OS_SUCCESS if success
              OS_SEM_FAILURE if the semaphore was not previously initialized or is 
@@ -2297,25 +2044,22 @@ int32 OS_MutSemGive (uint32 sem_id)
 ---------------------------------------------------------------------------------------*/
 int32 OS_MutSemTake (uint32 sem_id)
 {
-   /* 
-   ** Check Parameters 
-   */
-   if(sem_id >= OS_MAX_MUTEXES || OS_mut_sem_table[sem_id].free == TRUE)
-   {
-      return OS_ERR_INVALID_ID;
-   }
+    /* Check Parameters */
 
-   if ( rtems_semaphore_obtain(OS_mut_sem_table[sem_id].id, RTEMS_WAIT,
-                                RTEMS_NO_TIMEOUT)!= RTEMS_SUCCESSFUL)
-   {
-       return OS_SEM_FAILURE;
-   }
-   else
-   {
-       return OS_SUCCESS;
-   }
+   if(sem_id >= OS_MAX_MUTEXES || OS_mut_sem_table[sem_id].free == TRUE)
+        return OS_ERR_INVALID_ID;
+
+	if( pthread_mutex_lock(&(OS_mut_sem_table[sem_id].id) ))
+    {
+		return OS_SEM_FAILURE ;
+    }
+	else
+    {
+		return OS_SUCCESS ;
+    }
 
 }/* end OS_MutSemGive */
+
 
 /*--------------------------------------------------------------------------------------
     Name: OS_MutSemGetIdByName
@@ -2335,16 +2079,13 @@ int32 OS_MutSemGetIdByName (uint32 *sem_id, const char *sem_name)
     uint32 i;
 
     if(sem_id == NULL || sem_name == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
 
     /* a name too long wouldn't have been allowed in the first place
      * so we definitely won't find a name too long*/
+    
     if (strlen(sem_name) >= OS_MAX_API_NAME)
-    {
-        return OS_ERR_NAME_TOO_LONG;
-    }
+            return OS_ERR_NAME_TOO_LONG;
 
     for (i = 0; i < OS_MAX_MUTEXES; i++)
     {
@@ -2358,12 +2099,11 @@ int32 OS_MutSemGetIdByName (uint32 *sem_id, const char *sem_name)
     
     /* The name was not found in the table,
      *  or it was, and the sem_id isn't valid anymore */
- 
     return OS_ERR_NAME_NOT_FOUND;
 
 }/* end OS_MutSemGetIdByName */
 /*---------------------------------------------------------------------------------------
-    Name: OS_MutSemGetInfo
+    Name: OS_MutnSemGetInfo
 
     Purpose: This function will pass back a pointer to structure that contains 
              all of the relevant info( name and creator) about the specified mutex
@@ -2376,32 +2116,29 @@ int32 OS_MutSemGetIdByName (uint32 *sem_id, const char *sem_name)
 
 int32 OS_MutSemGetInfo (uint32 sem_id, OS_mut_sem_prop_t *mut_prop)  
 {
-    rtems_status_code status; 
-    
     /* Check to see that the id given is valid */
+    
     if (sem_id >= OS_MAX_MUTEXES || OS_mut_sem_table[sem_id].free == TRUE)
-    {
         return OS_ERR_INVALID_ID;
-    }
 
     if (mut_prop == NULL)
-    {
         return OS_INVALID_POINTER;
-    }
     
     /* put the info into the stucture */    
-    status = rtems_semaphore_obtain (OS_mut_sem_table_sem, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+    sem_wait( &(OS_mut_sem_table_sem));
     mut_prop -> creator =   OS_mut_sem_table[sem_id].creator;
     strcpy(mut_prop-> name, OS_mut_sem_table[sem_id].name);
-    status = rtems_semaphore_release (OS_mut_sem_table_sem);
+    sem_post( &(OS_mut_sem_table_sem));
 
     return OS_SUCCESS;
     
 } /* end OS_BinSemGetInfo */
 
+
 /****************************************************************************************
-                                    TICK API
+                                    INFO API
 ****************************************************************************************/
+
 
 /*---------------------------------------------------------------------------------------
    Name: OS_Milli2Ticks
@@ -2413,13 +2150,16 @@ int32 OS_MutSemGetInfo (uint32 sem_id, OS_mut_sem_prop_t *mut_prop)
 
 int32 OS_Milli2Ticks (uint32 milli_seconds)
 {
-    uint32 num_of_ticks,tick_duration_usec ;
+	uint32 num_of_ticks,tick_duration_usec ;
 	
-    tick_duration_usec = OS_Tick2Micros() ;
-    num_of_ticks = ((milli_seconds * 1000) + tick_duration_usec -1 ) / tick_duration_usec ;
-
-    return(num_of_ticks) ; 
+	tick_duration_usec = OS_Tick2Micros() ;
+	
+	num_of_ticks = 
+		( (milli_seconds * 1000) + tick_duration_usec -1 ) / tick_duration_usec ;
+	
+	return(num_of_ticks) ; 
 }/* end OS_Milli2Ticks */
+
 
 /*---------------------------------------------------------------------------------------
    Name: OS_InfoGetTicks
@@ -2429,12 +2169,12 @@ int32 OS_Milli2Ticks (uint32 milli_seconds)
 
 int32 OS_Tick2Micros (void)
 {
-    /* sysconf(_SC_CLK_TCK) returns  ticks/second.
-    ** 1/sysconf(_SC_CLK_TCK) is the duration of a tick in seconds
-    ** 1000000 * sysconf(_SC_CLK_TCK) is the duration of a tick in 
-    **	microsecond seconds 
-    */
-    return(1000000/sysconf(_SC_CLK_TCK) );
+/* sysconf(_SC_CLK_TCK) returns  ticks/second.
+** 1/sysconf(_SC_CLK_TCK) is the duration of a tick in seconds
+** 1000000 * sysconf(_SC_CLK_TCK) is the duration of a tick in 
+**	microsecond seconds 
+*/
+	return(	1000000/sysconf(_SC_CLK_TCK) );
 	
 	/*
     comment:
@@ -2456,26 +2196,23 @@ int32 OS_Tick2Micros (void)
 
 int32 OS_GetLocalTime(OS_time_t *time_struct)
 {
-   int               status;
+    
+   int status;
    struct  timespec  time;
 
    if (time_struct == NULL)
-   {
       return OS_INVALID_POINTER;
-   }
    
-   status = clock_gettime(CLOCK_REALTIME, &time);
-   if (status != 0)
-   {
+    status = clock_gettime(CLOCK_REALTIME, &time);
+    if (status != 0)
         return OS_ERROR;
-   }
 
    time_struct -> seconds = time.tv_sec;
    time_struct -> microsecs = time.tv_nsec / 1000;
 
    return OS_SUCCESS;
-
 } /* end OS_GetLocalTime */
+
 
 /*---------------------------------------------------------------------------------------
  * Name: OS_SetLocalTime
@@ -2485,29 +2222,26 @@ int32 OS_GetLocalTime(OS_time_t *time_struct)
 
 int32 OS_SetLocalTime(OS_time_t *time_struct)
 {
-   int               status;
+    
+   int status;
    struct  timespec  time;
 
    if (time_struct == NULL)
-   {
       return OS_INVALID_POINTER;
-   }
    
    time.tv_sec = time_struct -> seconds;
    time.tv_nsec = (time_struct -> microsecs) * 1000;
 
-   status = clock_settime(CLOCK_REALTIME, &time);
-   if (status != 0)
-   {
+    status = clock_settime(CLOCK_REALTIME, &time);
+    if (status != 0)
         return OS_ERROR;
-   }
+
 
    return OS_SUCCESS;
-
 } /* end OS_SetLocalTime */
 
 /****************************************************************************************
-                                 INT API
+                                 INFO API
 ****************************************************************************************/
 
 /*---------------------------------------------------------------------------------------
@@ -2523,37 +2257,39 @@ int32 OS_SetLocalTime(OS_time_t *time_struct)
         parameter :The parameter that is passed to the ISR
 
 ---------------------------------------------------------------------------------------*/
-int32 OS_IntAttachHandler  (uint32 InterruptNumber, osal_task_entry InterruptHandler, int32 parameter)
+
+int32 OS_IntAttachHandler (uint32 InterruptNumber, void *InterruptHandler, 
+                            int32 parameter)
 {
-   rtems_status_code ret_status;
-   uint32 status ;
-   rtems_isr_entry old_handler;
+	rtems_status_code ret_status;
+	uint32 status ;
+	rtems_isr_entry old_handler;
 	
-   ret_status = rtems_interrupt_catch( 
+	ret_status = rtems_interrupt_catch( 
 		(rtems_isr_entry)InterruptHandler,
 		(rtems_vector_number)InterruptNumber,
 		&old_handler);
-
-   switch (ret_status) 
-   {
-       case RTEMS_SUCCESSFUL :
-          status = OS_SUCCESS;
-	  break ;
+	
+	switch (ret_status) 
+    {
+    case RTEMS_SUCCESSFUL :
+		status = OS_SUCCESS;
+		break ;
 		
-       case RTEMS_INVALID_NUMBER :
-          status = OS_INVALID_INT_NUM;
-          break ;
+    case RTEMS_INVALID_NUMBER :
+		status = OS_INVALID_INT_NUM;
+		break ;
 		
-       case RTEMS_INVALID_ADDRESS :
-          status = OS_INVALID_POINTER;
-          break ;
+    case RTEMS_INVALID_ADDRESS :
+		status = OS_INVALID_POINTER;
+		break ;
 		
     default :
-          status = OS_ERROR;
-          break ;
+		status = OS_ERROR;
+		break ;
+		
     }
-    return(status) ;
-
+	return(status) ;
 }/* end OS_IntAttachHandler */
 /*---------------------------------------------------------------------------------------
    Name: OS_IntUnlock
@@ -2566,10 +2302,16 @@ int32 OS_IntAttachHandler  (uint32 InterruptNumber, osal_task_entry InterruptHan
 
 int32 OS_IntUnlock (int32 IntLevel)
 {
-    rtems_interrupt_enable ( (rtems_interrupt_level) IntLevel); 
-    return (OS_SUCCESS);
+    int32 ReturnCode;
+    
+   rtems_interrupt_enable ( (rtems_interrupt_level) IntLevel); 
+
+    ReturnCode = OS_SUCCESS;
+    
+    return ReturnCode;
 
 }/* end OS_IntUnlock */
+
 
 /*---------------------------------------------------------------------------------------
    Name: OS_IntLock
@@ -2578,7 +2320,7 @@ int32 OS_IntUnlock (int32 IntLevel)
 
    Parameters:
    
-   Returns: Interrupt level    
+   Returns: Interrupt level before OS_IntDisableAll Call   
 ---------------------------------------------------------------------------------------*/
 
 int32 OS_IntLock (void)
@@ -2587,6 +2329,7 @@ int32 OS_IntLock (void)
 
    rtems_interrupt_disable(rtems_int_level) ; 
    return ( (int32) rtems_int_level) ;
+
 
 }/* end OS_IntLock */
 
@@ -2602,8 +2345,14 @@ int32 OS_IntLock (void)
 
 int32 OS_IntEnable (int32 Level)
 {
-    rtems_interrupt_enable ( (rtems_interrupt_level) Level); 
-    return(OS_SUCCESS);
+    int32 ReturnCode;
+    
+   rtems_interrupt_enable ( (rtems_interrupt_level) Level); 
+
+    ReturnCode = OS_SUCCESS;
+    
+    return ReturnCode;
+
 }/* end OS_IntEnable */
 
 
@@ -2619,41 +2368,15 @@ int32 OS_IntEnable (int32 Level)
 
 int32 OS_IntDisable (int32 Level)
 {
-    rtems_interrupt_disable ( Level); 
-    return(OS_SUCCESS);
+    int32 ReturnCode;
+    
+    rtems_interrupt_disable ( (rtems_interrupt_level) Level); 
+
+    ReturnCode = OS_SUCCESS;
+    
+    return ReturnCode;
+
 }/* end OS_IntDisable */
-
-/*---------------------------------------------------------------------------------------
-   Name: OS_HeapGetInfo
-
-   Purpose: Return current info on the heap
-
-   Parameters:
-
----------------------------------------------------------------------------------------*/
-int32 OS_HeapGetInfo       (OS_heap_prop_t *heap_prop)
-{
-    region_information_block info;
-    int                      status;
-
-    if (heap_prop == NULL)
-    {
-        return OS_INVALID_POINTER;
-    }
-
-    status = malloc_info( &info );
-
-    if ( status != 0 )
-    {
-       return(OS_ERROR);
-    }
-
-    heap_prop->free_bytes         = (uint32) info.Free.total;
-    heap_prop->free_blocks        = (uint32) info.Free.number;
-    heap_prop->largest_free_block = (uint32) info.Free.largest;
- 
-    return (OS_SUCCESS);
-}
 
 /*---------------------------------------------------------------------------------------
  *  Name: OS_GetErrorName()
@@ -2715,7 +2438,8 @@ int32 OS_GetErrorName(int32 error_num, os_err_name_t * err_name)
 
     strcpy((char*) err_name, local_name);
 
-    return return_code;
+
+     return return_code;
 }
 /*---------------------------------------------------------------------------------------
  * Name: OS_FindCreator
@@ -2725,7 +2449,7 @@ int32 OS_GetErrorName(int32 error_num, os_err_name_t * err_name)
 
 uint32 OS_FindCreator(void)
 {
-    rtems_id          rtems_task_id;
+	rtems_id          rtems_task_id;
     int i; 
     /* find the calling task ID */
     rtems_task_ident(RTEMS_SELF, 0, &rtems_task_id);
@@ -2737,27 +2461,28 @@ uint32 OS_FindCreator(void)
     }
 
     return i;
+    
 }
 /*-----------------------------------------------------------------------------*/
 uint32  OS_CompAbsDelayedTime( uint32 milli_second , struct timespec * tm)
 {
-     int return_status ;
+	int return_status ;
 	
-     /* get the current time */
-     return_status = clock_gettime( CLOCK_REALTIME,  tm );
+	/* get the current time */
+	return_status = clock_gettime( CLOCK_REALTIME,  tm );
 		
-     /* add the delay to the current time */
-     tm->tv_sec  += (time_t) (milli_second / 1000) ;
-     /* convert residue ( milli seconds)  to nano second */
-     tm->tv_nsec +=  (milli_second % 1000) * 1000000 ;
+	/* add the delay to the current time */
+	tm->tv_sec  += (time_t) (milli_second / 1000) ;
+	/* convert residue ( milli seconds)  to nano second */
+	tm->tv_nsec +=  (milli_second % 1000) * 1000000 ;
 	
-    if(tm->tv_nsec > 999999999 )
+	if(tm->tv_nsec > 999999999 )
     {
-	tm->tv_nsec -= 1000000000 ;
-	tm->tv_sec ++ ;
+		tm->tv_nsec -= 1000000000 ;
+		tm->tv_sec ++ ;
     }
 	
-    return(OS_SUCCESS) ;
+	return(OS_SUCCESS) ;
 }
 /* ---------------------------------------------------------------------------
  * Name: OS_printf 
@@ -2766,6 +2491,7 @@ uint32  OS_CompAbsDelayedTime( uint32 milli_second , struct timespec * tm)
  *          useful for using OS- specific thats that will allow non-polled
  *          print statements for the real time systems. 
  *
+
  ---------------------------------------------------------------------------*/
 void OS_printf( const char *String, ...)
 {
@@ -2815,3 +2541,4 @@ int32 OS_FPUExcGetMask(uint32 *mask)
     */
     return(OS_SUCCESS);
 }
+

@@ -31,7 +31,7 @@ include ../../debug-opts.mak
 ##
 ##       compiler-opts.mak contains compiler definitions and switches/defines
 ##
-include $(OSAL_SRC)/bsp/$(BSP)/make/compiler-opts.mak
+include $(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/$(BSP)/make/compiler-opts.mak
 ##
 ##       SUBSYS.mak file contains the list of objects to compile
 ##
@@ -41,15 +41,11 @@ include $(OSAL_SRC)/os/$(OS)/$(SUBSYS).mak
 ## Setup the include path for this subsystem
 ## The OS specific includes are in the compiler-opts.mak file
 ##
-## The static-loader path is for the GSFC static loader used by
-## the RTEMS port. It can be ignored or removed.
-##
 INCLUDE_PATH = \
 -I$(OSAL_SRC)/inc \
 -I$(OSAL_SRC)/os/inc \
 -I$(OSAL_SRC)/os/$(OS) \
--I../../inc \
--I/opt/static-loader/inc
+-I../../inc
 
 ##
 ## Define the VPATH make variable. 

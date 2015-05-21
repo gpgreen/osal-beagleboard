@@ -71,226 +71,239 @@ int TestTasks(void)
     int failGetIdcount = 0;
     int totalfail = -999;
     
-   /* OS_TaskRegister(); */
+    OS_TaskRegister();
 
     /* Testing Creating up to OS_MAX_TASKS (20), plus one more */
     InitializeTaskIds();
     
-    status = OS_TaskCreate( &task_0_id, "Task 0", task_0, task_0_stack, 
+    status = OS_TaskCreate( &task_0_id, "Task 0", (void *)task_0, task_0_stack, 
                             TASK_0_STACK_SIZE, TASK_0_PRIORITY, 0);
-    
-    printf("Create Status = %d, Id = %d\n",status,task_0_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_0_id);
-    
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_0_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_0_id);
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
     
-    status = OS_TaskCreate( &task_1_id, "Task 1", task_1, task_1_stack, 
+    status = OS_TaskCreate( &task_1_id, "Task 1", (void *)task_1, task_1_stack, 
                             TASK_1_STACK_SIZE, TASK_1_PRIORITY, 0);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_1_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_1_id);
+    */
     
-    printf("Create Status = %d, Id = %d\n",status,task_1_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_1_id);
-   
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_2_id, "Task 2", task_2, task_2_stack, 
+    status = OS_TaskCreate( &task_2_id, "Task 2", (void *)task_2, task_2_stack, 
             TASK_2_STACK_SIZE, TASK_2_PRIORITY, 0);
-    
-    printf("Create Status = %d, Id = %d\n",status,task_2_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_2_id);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_2_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_2_id);
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_3_id, "Task 3", task_3, task_3_stack, 
+    status = OS_TaskCreate( &task_3_id, "Task 3", (void *)task_3, task_3_stack, 
             TASK_3_STACK_SIZE, TASK_3_PRIORITY, 0);
-   
-    printf("Create Status = %d, Id = %d\n",status,task_3_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_3_id);    
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_3_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_3_id);    
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_4_id, "Task 4", task_4, task_4_stack, 
+    status = OS_TaskCreate( &task_4_id, "Task 4", (void *)task_4, task_4_stack, 
                             TASK_4_STACK_SIZE, TASK_4_PRIORITY, 0);
-    
-    printf("Create Status = %d, Id = %d\n",status,task_4_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_4_id);    
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_4_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_4_id);    
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_5_id, "Task 5", task_5, task_5_stack,
+    status = OS_TaskCreate( &task_5_id, "Task 5", (void *)task_5, task_5_stack,
                             TASK_5_STACK_SIZE, TASK_5_PRIORITY, 0);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_5_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_5_id);
+    */
     
-    printf("Create Status = %d, Id = %d\n",status,task_5_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_5_id);
-   
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_6_id, "Task 6", task_6, task_6_stack, 
+    status = OS_TaskCreate( &task_6_id, "Task 6", (void *)task_6, task_6_stack, 
                             TASK_6_STACK_SIZE, TASK_6_PRIORITY, 0);
-    printf("Create Status = %d, Id = %d\n",status,task_6_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_6_id);
+    /* printf("Create Status = %d, Id = %d\n",status,task_6_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_6_id);
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_7_id, "Task 7", task_7, task_7_stack, 
+    status = OS_TaskCreate( &task_7_id, "Task 7", (void *)task_7, task_7_stack, 
                             TASK_7_STACK_SIZE, TASK_7_PRIORITY, 0);
-   
-    printf("Create Status = %d, Id = %d\n",status,task_7_id);
-    printf("Status after creating this task: %d\n",status);
-    printf("Id after creating this task: %d\n",task_7_id);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_7_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_7_id);
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_8_id, "Task 8", task_8, task_8_stack, 
+    status = OS_TaskCreate( &task_8_id, "Task 8", (void *)task_8, task_8_stack, 
                             TASK_8_STACK_SIZE, TASK_8_PRIORITY, 0);
-     
-     printf("Create Status = %d, Id = %d\n",status,task_8_id);
-     printf("Status after creating this task: %d\n",status);
-     printf("Id after creating this task: %d\n",task_8_id);
+     /*
+     * printf("Create Status = %d, Id = %d\n",status,task_8_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_8_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_9_id, "Task 9", task_9, task_9_stack, 
+    status = OS_TaskCreate( &task_9_id, "Task 9", (void *)task_9, task_9_stack, 
                             TASK_9_STACK_SIZE, TASK_9_PRIORITY, 0);
-    
-     printf("Create Status = %d, Id = %d\n",status,task_9_id);
-     printf("Status after creating this task: %d\n",status);
-     printf("Id after creating this task: %d\n",task_9_id);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_9_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_9_id);
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_10_id, "Task 10", task_10, task_10_stack, 
+    status = OS_TaskCreate( &task_10_id, "Task 10", (void *)task_10, task_10_stack, 
                             TASK_10_STACK_SIZE, TASK_10_PRIORITY, 0);
-    
-      printf("Create Status = %d, Id = %d\n",status,task_10_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_10_id);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_10_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_10_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_11_id, "Task 11", task_11, task_11_stack, 
+    status = OS_TaskCreate( &task_11_id, "Task 11", (void *)task_11, task_11_stack, 
                             TASK_11_STACK_SIZE, TASK_11_PRIORITY, 0);
-    
-      printf("Create Status = %d, Id = %d\n",status,task_11_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_11_id);
-    
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_11_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_11_id);
+    */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_12_id, "Task 12", task_12, task_12_stack, 
+    status = OS_TaskCreate( &task_12_id, "Task 12", (void *)task_12, task_12_stack, 
                             TASK_12_STACK_SIZE, TASK_12_PRIORITY, 0);
-
-     printf("Create Status = %d, Id = %d\n",status,task_12_id);
-     printf("Status after creating this task: %d\n",status);
-     printf("Id after creating this task: %d\n",task_12_id);
-     
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_12_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_12_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_13_id, "Task 13", task_13, task_13_stack, 
+    status = OS_TaskCreate( &task_13_id, "Task 13", (void *)task_13, task_13_stack, 
                             TASK_13_STACK_SIZE, TASK_13_PRIORITY, 0);
-     
-     printf("Create Status = %d, Id = %d\n",status,task_13_id);
-     printf("Status after creating this task: %d\n",status);
-     printf("Id after creating this task: %d\n",task_13_id);
+    /* 
+     * printf("Create Status = %d, Id = %d\n",status,task_13_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_13_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_14_id, "Task 14", task_14, task_14_stack, 
+    status = OS_TaskCreate( &task_14_id, "Task 14", (void *)task_14, task_14_stack, 
                             TASK_14_STACK_SIZE, TASK_14_PRIORITY, 0);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_14_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_14_id);
+     */
     
-     printf("Create Status = %d, Id = %d\n",status,task_14_id);
-     printf("Status after creating this task: %d\n",status);
-     printf("Id after creating this task: %d\n",task_14_id);
-   
     if (status != PASS)
         failTaskCreatecount++;
         
-    status = OS_TaskCreate( &task_15_id, "Task 15", task_15, task_15_stack, 
+    status = OS_TaskCreate( &task_15_id, "Task 15", (void *)task_15, task_15_stack, 
                             TASK_15_STACK_SIZE, TASK_15_PRIORITY, 0);
-    
-      printf("Create Status = %d, Id = %d\n",status,task_15_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_15_id);
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_15_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_15_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
 
-    status = OS_TaskCreate( &task_16_id, "Task 16", task_16, task_16_stack, 
+    status = OS_TaskCreate( &task_16_id, "Task 16", (void *)task_16, task_16_stack, 
                             TASK_16_STACK_SIZE, TASK_16_PRIORITY, 0);
-     
-      printf("Create Status = %d, Id = %d\n",status,task_16_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_16_id);
-     
+     /*
+     * printf("Create Status = %d, Id = %d\n",status,task_16_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_16_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
 
-    status = OS_TaskCreate( &task_17_id, "Task 17", task_17, task_17_stack, 
+    status = OS_TaskCreate( &task_17_id, "Task 17", (void *)task_17, task_17_stack, 
                             TASK_17_STACK_SIZE, TASK_17_PRIORITY, 0);
-    
-      printf("Create Status = %d, Id = %d\n",status,task_17_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_17_id);
-     
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_17_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_17_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_18_id, "Task 18", task_18, task_18_stack, 
+    status = OS_TaskCreate( &task_18_id, "Task 18", (void *)task_18, task_18_stack, 
                             TASK_18_STACK_SIZE, TASK_18_PRIORITY, 0);
-    
-      printf("Create Status = %d, Id = %d\n",status,task_18_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_18_id);
-     
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_18_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_18_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_19_id, "Task 19", task_19, task_19_stack, 
+    status = OS_TaskCreate( &task_19_id, "Task 19", (void *)task_19, task_19_stack, 
                             TASK_19_STACK_SIZE, TASK_19_PRIORITY, 0);
-     
-      printf("Create Status = %d, Id = %d\n",status,task_19_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_19_id);
-     
+     /*
+     * printf("Create Status = %d, Id = %d\n",status,task_19_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_19_id);
+     */
     
     if (status != PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_20_id, "Task 20", task_20, task_20_stack, 
+    status = OS_TaskCreate( &task_20_id, "Task 20", (void *)task_20, task_20_stack, 
                             TASK_20_STACK_SIZE, TASK_20_PRIORITY, 0);
-    
-      printf("Create Status = %d, Id = %d\n",status,task_20_id);
-      printf("Status after creating this task: %d\n",status);
-      printf("Id after creating this task: %d\n",task_20_id);
-     
+    /*
+     * printf("Create Status = %d, Id = %d\n",status,task_20_id);
+     * printf("Status after creating this task: %d\n",status);
+     * printf("Id after creating this task: %d\n",task_20_id);
+     */
     
     if (status == PASS)
         failTaskCreatecount++;
@@ -378,26 +391,26 @@ int TestTasks(void)
 
     InitializeTaskIds();
     /* Create Task 0 again */
-    status = OS_TaskCreate( &task_0_id, "Task 0", task_0, task_0_stack, 
+    status = OS_TaskCreate( &task_0_id, "Task 0", (void *)task_0, task_0_stack, 
                             TASK_0_STACK_SIZE, TASK_0_PRIORITY, 0);
       /*printf("Create Status = %d, Id = %d\n",status,task_0_id); */
     if (status != PASS)
         failTaskCreatecount++;
     
   /* Try and create another "Task 0", should fail as we already have one named "Task 0" */
-    status = OS_TaskCreate( &task_1_id, "Task 0", task_0, task_0_stack, 
+    status = OS_TaskCreate( &task_1_id, "Task 0", (void *)task_0, task_0_stack, 
                             TASK_0_STACK_SIZE, TASK_0_PRIORITY, 0);
      /* printf("Create Status = %d, Id = %d\n",status,task_1_id); */
     if (status == PASS)
         failTaskCreatecount++;
 
-    status = OS_TaskCreate( &task_2_id, "Task 2", task_2, task_2_stack,
+    status = OS_TaskCreate( &task_2_id, "Task 2", (void *)task_2, task_2_stack,
                             TASK_2_STACK_SIZE, TASK_2_PRIORITY, 0);
     /*  printf("Create Status = %d, Id = %d\n",status,task_2_id); */
     if (status != PASS)
         failTaskCreatecount++;
     
-    status = OS_TaskCreate( &task_3_id, "Task 3", task_3, task_3_stack,
+    status = OS_TaskCreate( &task_3_id, "Task 3", (void *)task_3, task_3_stack,
                             TASK_3_STACK_SIZE, TASK_3_PRIORITY, 0);
     /*  printf("Create Status = %d, Id = %d\n",status,task_3_id); */
     if (status != PASS)
@@ -437,14 +450,14 @@ int TestTasks(void)
     
 
     if (failTaskCreatecount != 0)
-        printf("Task Create Failed Count: %d\n", failTaskCreatecount);
+        printf("TC %d\n", failTaskCreatecount);
 
     if (failTaskDeletecount != 0)
-        printf("Task Delete Failed Count: %d\n", failTaskDeletecount);
+        printf("TD %d\n", failTaskDeletecount);
 
 
     if (failGetIdcount != 0)
-        printf("Task Get ID Failed Count: %d\n", failGetIdcount);
+        printf("GI %d\n", failGetIdcount);
 
     totalfail = failTaskCreatecount + failTaskDeletecount + failGetIdcount;
     
@@ -645,14 +658,26 @@ int TestQueues(void)
      /* printf("Status after Deleting q 3: %d\n",status); */
     if (status != PASS)
         failQDeletecount++;
+
+    
+    if (failQCreatecount != 0);
+         /* printf("QC %d\n", failQCreatecount); */
+
+    if (failQDeletecount != 0);
+         /* printf("QD %d\n", failQDeletecount); */
+
+
+    if (failQGetIdcount != 0);
+         /* printf("GI %d\n", failQGetIdcount); */
+
     
     totalfailures = failQCreatecount + failQDeletecount + failQGetIdcount;
     
     if (totalfailures != 0)
     {
-        printf("Queue Create Failed Count: %d\n",failQCreatecount);
-        printf("Queue Delete Failed Count: %d\n",failQDeletecount);
-        printf("Queue Get ID Failed Count: %d\n",failQGetIdcount);
+        printf("Qcreate: %d\n",failQCreatecount);
+        printf("QDelete: %d\n",failQDeletecount);
+        printf("QGetId : %d\n",failQGetIdcount);
     }
     
     return totalfailures;
@@ -784,7 +809,7 @@ int TestBinaries(void)
 
     InitializeBinIds();
     status = OS_BinSemCreate( &bin_0,"Bin 0",OS_SEM_FULL,0);
-    /* printf("Status after creating: %d,%d\n",status,bin_0); */
+      /* printf("Status after creating: %d,%d\n",status,bin_0); */
     if (status != OS_SUCCESS)
         failBinCreatecount++;
 
@@ -828,6 +853,9 @@ int TestBinaries(void)
     if (status != OS_SUCCESS || bin_3 != 2)
         failBinGetIdcount++;
      
+
+
+    
     status = OS_BinSemDelete(bin_0);
      /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
@@ -840,13 +868,13 @@ int TestBinaries(void)
         failBinDeletecount++;
 
     if (failBinCreatecount != 0)
-        printf("Bin Sem Create Failed Count %d\n", failBinCreatecount);
+        printf("BC %d\n", failBinCreatecount);
 
     if (failBinDeletecount != 0)
-        printf("Bin Sem Delete Failed Count %d\n", failBinDeletecount);
+        printf("BD %d\n", failBinDeletecount);
 
     if (failBinGetIdcount != 0)
-        printf("Bin Sem Get ID Failed Count %d\n", failBinGetIdcount);
+        printf("GI %d\n", failBinGetIdcount);
 
     
     totalfailures = failBinCreatecount + failBinDeletecount + failBinGetIdcount;
@@ -868,112 +896,111 @@ int TestMutexes(void)
     InitializeMutIds();
 
     status = OS_MutSemCreate( &mut_0,"Mut 0",0);
-    /* printf("Status after creating Mut 0: %d,%d\n",status,mut_0);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_0); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_1,"Mut 1",0);
-    /*  printf("Status after creating Mut 1: %d,%d\n",status,mut_1);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_1); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_2,"Mut 2",0);
-    /*  printf("Status after creating Mut 2: %d,%d\n",status,mut_2);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_2); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_3,"Mut 3",0);
-    /*  printf("Status after creating Mut 3: %d,%d\n",status,mut_3); */
+     /* printf("Status after creating: %d,%d\n",status,mut_3); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_4,"Mut 4",0);
-    /*  printf("Status after creating Mut 4: %d,%d\n",status,mut_4);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_4); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_5,"Mut 5",0);
-    /*   printf("Status after creating Mut 5: %d,%d\n",status,mut_5);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_5); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_6,"Mut 6",0);
-    /*  printf("Status after creating Mut 6: %d,%d\n",status,mut_6);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_6); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_7,"Mut 7",0);
-    /*  printf("Status after creating Mut 7: %d,%d\n",status,mut_7);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_7); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_8,"Mut 8",0);
-    /*  printf("Status after creating Mut 8: %d,%d\n",status,mut_8);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_8); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_9,"Mut 9",0);
-    /*  printf("Status after creating Mut 9: %d,%d\n",status,mut_9);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_9); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_10,"Mut 10",0);
-    /*  printf("Status after creating Mut 10: %d,%d\n",status,mut_10);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_10); */
     if (status == OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemDelete(mut_0);
-    /*  printf("Status after deleteing Mut 0:%d\n",status);   */
+     /* printf("Status after deleteing:%d\n",status); */ 
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_1);
-    /*  printf("Status after deleteing Mut 1:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_2);
-    /*  printf("Status after deleteing Mut 2:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_3);
-    /*  printf("Status after deleteing Mut 3:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_4);
-    /*  printf("Status after deleteing Mut 4:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_5);
-    /*  printf("Status after deleteing Mut 5:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_6);
-    /*  printf("Status after deleteing Mut 6:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
-
     status = OS_MutSemDelete(mut_7);
-    /*  printf("Status after deleteing Mut 7:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_8);
-    /*  printf("Status after deleteing Mut 8:%d\n",status); */ 
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_9);
-    /*  printf("Status after deleteing Mut 9:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_10);
-    /*  printf("Status after deleteing Mut 10:%d\n",status); */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status == OS_SUCCESS)
         failMutDeletecount++;
 /*
@@ -982,22 +1009,22 @@ int TestMutexes(void)
 */
     InitializeMutIds();
     status = OS_MutSemCreate( &mut_0,"Mut 0",0);
-    /*  printf("Status after creating Mut 0: %d,%d\n",status,mut_0);  */
+     /* printf("Status after creating: %d,%d\n",status,mut_0); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_1,"Mut 0",0);
-    /*  printf("Status after creating Mut 0 again: %d,%d\n",status,mut_1); */
+     /* printf("Status after creating: %d,%d\n",status,mut_1); */
     if (status == OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_2,"Mut 2",0);
-    /*  printf("Status after creating Mut 2: %d,%d\n",status,mut_2); */
+     /* printf("Status after creating: %d,%d\n",status,mut_2); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
     status = OS_MutSemCreate( &mut_3,"Mut 3",0);
-    /*  printf("Status after creating Mut 3: %d,%d\n",status,mut_3); */
+     /* printf("Status after creating: %d,%d\n",status,mut_3); */
     if (status != OS_SUCCESS)
         failMutCreatecount++;
 
@@ -1018,34 +1045,35 @@ int TestMutexes(void)
         failMutGetIdcount++;
     
     status = OS_MutSemDelete(mut_0);
-    /*  printf("Status after deleteing Mut 0:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     /* this one was never created*/
     status = OS_MutSemDelete(mut_1);
-    /*  printf("Status after deleteing Mut 1:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status == OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_2);
-    /*  printf("Status after deleteing Mut 2:%d\n",status);  */
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
 
     status = OS_MutSemDelete(mut_3);
-    /*  printf("Status after deleteing Mut 3:%d\n",status); */ 
+     /* printf("Status after deleteing:%d\n",status); */
     if (status != OS_SUCCESS)
         failMutDeletecount++;
   
     if (failMutCreatecount != 0)
-        printf("Mutex Create Failed Count %d\n", failMutCreatecount);
+        printf("MC %d\n", failMutCreatecount);
 
     if (failMutDeletecount != 0)
-        printf("Mutex Delete Failed Count %d\n", failMutDeletecount);
+        printf("MD %d\n", failMutDeletecount);
+
 
     if (failMutGetIdcount != 0)
-        printf("Mutex Get ID Failed Count %d\n", failMutGetIdcount);
+        printf("GI %d\n", failMutGetIdcount);
 
     totalfailures = failMutCreatecount + failMutDeletecount + failMutGetIdcount;
     
@@ -1124,7 +1152,7 @@ int TestGetInfos(void)
         
     /* first step is to create an object to to get the properties of */
     
-    status = OS_TaskCreate( &task_0_id, "Task 0", task_0, task_0_stack, 
+    status = OS_TaskCreate( &task_0_id, "Task 0", (void *)task_0, task_0_stack, 
                             TASK_0_STACK_SIZE, TASK_0_PRIORITY, 0);
     if (status != PASS)
         failTaskCreatecount++;

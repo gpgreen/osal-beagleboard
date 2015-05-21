@@ -1,7 +1,7 @@
 /*
 ** example1.c
 **
-** This is an example OSAL Application. This Application creates three tasks, 
+** This is an example OSAL Application. This Application creates a couple of tasks, 
 ** and passes messages back and forth using queues
 */
 
@@ -52,8 +52,8 @@ void task_3(void);
 #define MUTEX_ID          1
 
 uint32 task_1_id, task_2_id, task_3_id;
-uint32 mutex_id, msgq_id;
 
+uint32 mutex_id, msgq_id;
 /* Global Data */
 
 uint32 shared_resource_x;
@@ -63,86 +63,44 @@ uint32 shared_resource_x;
 
 void OS_Application_Startup(void)
 {
-  uint32 status;
-  printf("********If You see this, we got into OS_Application_Startup****\n");
+	printf("********If You see this, we got into OS_Application_Startup****\n");
 
-  status = OS_QueueCreate( &msgq_id, "MsgQ", MSGQ_DEPTH, MSGQ_SIZE, 0);
-  if ( status != OS_SUCCESS )
-  {
-     printf("Error creating Message Queue\n");
-  }
+  /*printf("calling Create Task 1\n");*/
+  OS_TaskCreate( &task_1_id, "Task 1", (void *)task_1, task_1_stack, TASK_1_STACK_SIZE, TASK_1_PRIORITY, 0);
 
-  status = OS_MutSemCreate( &mutex_id, "Mutex", 0);
-  if ( status != OS_SUCCESS )
-  {
-     printf("Error creating mutex\n");
-  }
-  else
-  {
-     printf("MutexSem ID = %d\n",mutex_id);
-  }
+  /*printf("calling Create Task 2\n");*/
+  OS_TaskCreate( &task_2_id, "Task 2", (void *)task_2, task_2_stack, TASK_2_STACK_SIZE, TASK_2_PRIORITY, 0);
 
-  status = OS_TaskCreate( &task_1_id, "Task 1", task_1, task_1_stack, TASK_1_STACK_SIZE, TASK_1_PRIORITY, 0);
-  if ( status != OS_SUCCESS )
-  {
-     printf("Error creating Task 1\n");
-  }
+  /*printf("calling Create Task 3\n");*/
+  OS_TaskCreate( &task_3_id, "Task 3", (void *)task_3, task_3_stack, TASK_3_STACK_SIZE, TASK_3_PRIORITY, 0);
 
-  status = OS_TaskCreate( &task_2_id, "Task 2", task_2, task_2_stack, TASK_2_STACK_SIZE, TASK_2_PRIORITY, 0);
-  if ( status != OS_SUCCESS )
-  {
-     printf("Error creating Task 2\n");
-  }
+  OS_QueueCreate( &msgq_id, "MsgQ", MSGQ_DEPTH, MSGQ_SIZE, 0);
 
-  status = OS_TaskCreate( &task_3_id, "Task 3", task_3, task_3_stack, TASK_3_STACK_SIZE, TASK_3_PRIORITY, 0);
-  if ( status != OS_SUCCESS )
-  {
-     printf("Error creating Task 3\n");
-  }
-
-
+  OS_MutSemCreate( &mutex_id, "Mutex", 0);
 }
+
 
 /* ********************** TASK 1 **************************** */
 
 void task_1(void)
 {
-    uint32 status;
-
-    printf("Starting task 1\n");
-
+	printf("In task 1\n");
     OS_TaskRegister();
 
     while(1)
     {
-        status = OS_MutSemTake(mutex_id);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 1:Error calling OS_MutSemTake with mutex_id = %d\n",mutex_id);
-        }
+        OS_MutSemTake(mutex_id);
 
-        shared_resource_x = task_1_id;
+            shared_resource_x = task_1_id;
 
-        status = OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 1:Error calling OS_QueuePut ( 1 )\n");
-        }
+            OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
 
-        shared_resource_x = task_1_id;
+            shared_resource_x = task_1_id;
+ 
+            OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
 
-        status = OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 1:Error calling OS_QueuePut ( 2 )\n");
-        }
+        OS_MutSemGive(mutex_id);
 
-        status = OS_MutSemGive(mutex_id);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 1:Error calling OS_MutSemGive\n");
-        }
-        
         OS_TaskDelay(100);
     }
 }
@@ -152,43 +110,24 @@ void task_1(void)
 
 void task_2(void)
 {
-    uint32 status;
-
-    printf("Starting task 2\n");
-
-    OS_TaskRegister();
+	printf("In task 2\n");
+	OS_TaskRegister();
 
     while(1)
     {
-        status = OS_MutSemTake(mutex_id);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 2:Error calling OS_MutSemTake\n");
-        }
+        OS_MutSemTake(mutex_id);
 
-        shared_resource_x = task_2_id;
+            shared_resource_x = task_2_id;
 
-        status = OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 2:Error calling OS_QueuePut (1)\n");
-        }
-            
-        OS_TaskDelay(150);
+            OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
+              
+            OS_TaskDelay(150);
 
-        shared_resource_x = task_2_id;
+            shared_resource_x = task_2_id;
 
-        status = OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 2:Error calling OS_QueuePut (2)\n");
-        }
+            OS_QueuePut(msgq_id, (void*)&shared_resource_x, sizeof(uint32), 0);
 
-        status = OS_MutSemGive(mutex_id);
-        if ( status != OS_SUCCESS )
-        {
-           printf("TASK 2:Error calling OS_MutSemGive\n");
-        }
+        OS_MutSemGive(mutex_id);
 
         OS_TaskDelay(500);
     }  
@@ -200,11 +139,9 @@ void task_2(void)
 void task_3(void)
 {   
     
-    uint32 data_received;
+	uint32 data_received;
     uint32 data_size;
     uint32 status;
-
-    printf("Starting task 3\n");
 
     OS_TaskRegister();
 
@@ -214,11 +151,7 @@ void task_3(void)
    
         if (status == OS_SUCCESS)
         {
-            printf("TASK 3: Received - %d\n", (int)data_received+1);
+            printf("Received - %d\n", (int)data_received+1);
         } 
-        else
-        {
-            printf("TASK 3: Error calling OS_QueueGet\n");
-        }
     }
 }

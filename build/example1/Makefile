@@ -39,7 +39,7 @@ EXEDIR=./
 # directory structures
 ########################################################################
 
-CORE_OBJS = ../core/osal/osal.o ../core/bsp/bsp.o
+CORE_OBJS = ../core/osal/osal.o ../core/hal/hal.o ../core/bsp/bsp.o
 
 ## 
 ## Include all necessary make rules
@@ -57,7 +57,7 @@ include ../debug-opts.mak
 ##
 ##       compiler-opts.mak contains compiler definitions and switches/defines
 ##
-include $(OSAL_SRC)/bsp/$(BSP)/make/compiler-opts.mak
+include $(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/$(BSP)/make/compiler-opts.mak
 
 ##
 ## Setup the include path for this subsystem
@@ -68,6 +68,7 @@ include $(OSAL_SRC)/bsp/$(BSP)/make/compiler-opts.mak
 INCLUDE_PATH = \
 -I$(OSAL_SRC)/inc \
 -I$(OSAL_SRC)/os/inc \
+-I$(OSAL_SRC)/arch/$(HWARCH)/$(PLATFORM)/inc \
 -I$(OSAL_SRC)/apps/inc \
 -I$(OSAL_SRC)/apps/$(APPTARGET) \
 -I../inc

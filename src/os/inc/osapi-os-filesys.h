@@ -1,41 +1,16 @@
 /*
 ** File: osapi-os-filesys.h
 **
-**      Copyright (c) 2004-2006, United States government as represented by the 
-**      administrator of the National Aeronautics Space Administration.  
-**      All rights reserved. This software was created at NASAs Goddard 
-**      Space Flight Center pursuant to government contracts.
-**
-**      This is governed by the NASA Open Source Agreement and may be used, 
-**      distributed and modified only pursuant to the terms of that agreement.
-**
 ** Author:  Alan Cudmore Code 582
 **
 ** Purpose: Contains functions prototype definitions and variables declarations
 **          for the OS Abstraction Layer, File System module
 **
-** $Revision: 1.8 $ 
+** $Revision: 1.1 $ 
 **
-** $Date: 2011/12/05 12:04:21EST $
+** $Date: 2007/10/16 16:14:52EDT $
 **
 ** $Log: osapi-os-filesys.h  $
-** Revision 1.8 2011/12/05 12:04:21EST acudmore 
-** Added OS_rewinddir API
-** Revision 1.7 2011/04/05 16:01:12EDT acudmore 
-** Added OS_CloseFileByName and OS_CloseAllFiles
-** Revision 1.6 2010/11/15 11:04:38EST acudmore 
-** Added OS_FileOpenCheck function.
-** Revision 1.5 2010/11/12 12:00:18EST acudmore 
-** replaced copyright character with (c) and added open source notice where needed.
-** Revision 1.4 2010/02/01 12:28:57EST acudmore 
-** Added OS_fsBytesFree API
-** Revision 1.3 2010/01/25 14:44:26EST acudmore 
-** renamed "new" variable to avoid C++ reserved name conflict.
-** Revision 1.2 2009/07/14 15:16:05EDT acudmore 
-** Added OS_TranslatePath to the API
-** Revision 1.1 2008/04/20 22:36:01EDT ruperera 
-** Initial revision
-** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-OSAL-REPOSITORY/src/os/inc/project.pj
 ** Revision 1.1 2007/10/16 16:14:52EDT apcudmore 
 ** Initial revision
 ** Member added to project d:/mksdata/MKS-OSAL-REPOSITORY/src/os/inc/project.pj
@@ -210,8 +185,7 @@ typedef unsigned long int   os_fshealth_t;
  * Initializes the File System functions 
 */
 
-int32           OS_FS_Init(void);
-
+void            OS_FS_Init(void);
 /*
  * Creates a file specified by path
 */
@@ -260,7 +234,7 @@ int32           OS_remove (const char *path);
 /*
  * Renames a file in the file system
 */
-int32           OS_rename (const char *old_filename, const char *new_filename);
+int32           OS_rename (const char *old, const char *new);
 
 /* 
  * copies a single file from src to dest
@@ -272,25 +246,11 @@ int32 OS_cp (const char *src, const char *dest);
 */
 int32 OS_mv (const char *src, const char *dest);
 
+
 /*
  * Copies the info of an open file to the structure
 */
 int32 OS_FDGetInfo (int32 filedes, OS_FDTableEntry *fd_prop);
-
-/*
-** Check to see if a file is open
-*/
-int32 OS_FileOpenCheck(char *Filename);
-
-/*
-** Close all open files
-*/
-int32 OS_CloseAllFiles(void);
-
-/*
-** Close a file by filename
-*/
-int32 OS_CloseFileByName(char *Filename);
 
 /******************************************************************************
 ** Directory API 
@@ -312,11 +272,6 @@ os_dirp_t       OS_opendir (const char *path);
 int32           OS_closedir(os_dirp_t directory);
 
 /*
- * Rewinds an open directory
-*/
-void           OS_rewinddir(os_dirp_t directory);
-
-/*
  * Reads the next object in the directory
 */
 os_dirent_t *   OS_readdir (os_dirp_t directory);
@@ -329,6 +284,11 @@ int32           OS_rmdir   (const char *path);
 /******************************************************************************
 ** System Level API 
 ******************************************************************************/
+/*
+ * Initializes the file system
+*/
+void OS_FS_Init(void);
+
 /*
  * Makes a file system
 */
@@ -356,16 +316,9 @@ int32           OS_rmfs        (char *devname);
 int32           OS_unmount     (const char *mountpoint);
 
 /*
- * Returns the number of free blocks in a file system
+ * Returns the number of free blocks in a fiile system
 */
 int32           OS_fsBlocksFree (const char *name);
-
-/*
-** Returns the number of free bytes in a file system 
-** Note the 64 bit data type to support filesystems that
-** are greater than 4 Gigabytes
-*/
-int32 OS_fsBytesFree (const char *name, uint64 *bytes_free);
 
 /*
  * Checks the health of a file system and repairs it if neccesary
@@ -376,11 +329,6 @@ os_fshealth_t   OS_chkfs       (const char *name, boolean repair);
  * Returns in the parameter the physical drive underneith the mount point 
 */
 int32       OS_FS_GetPhysDriveName  (char * PhysDriveName, char * MountPoint);
-
-/*
-** Translates a OSAL Virtual file system path to a host Local path
-*/
-int32       OS_TranslatePath ( const char *VirtualPath, char *LocalPath);
 
 /******************************************************************************
 ** Shell API

@@ -1,29 +1,16 @@
 /*
 ** File: osapi-os-net.h
 **
-**      Copyright (c) 2004-2006, United States government as represented by the 
-**      administrator of the National Aeronautics Space Administration.  
-**      All rights reserved. This software was created at NASAs Goddard 
-**      Space Flight Center pursuant to government contracts.
-**
-**      This is governed by the NASA Open Source Agreement and may be used, 
-**      distributed and modified only pursuant to the terms of that agreement.
-**
 ** Author:  Alan Cudmore Code 582
 **
 ** Purpose: Contains functions prototype definitions and variables declarations
 **          for the OS Abstraction Layer, Network Module
 **
-** $Revision: 1.2 $ 
+** $Revision: 1.1 $ 
 **
-** $Date: 2010/11/12 12:00:19EST $
+** $Date: 2007/10/16 16:14:52EDT $
 **
 ** $Log: osapi-os-net.h  $
-** Revision 1.2 2010/11/12 12:00:19EST acudmore 
-** replaced copyright character with (c) and added open source notice where needed.
-** Revision 1.1 2008/04/20 22:36:02EDT ruperera 
-** Initial revision
-** Member added to project c:/MKSDATA/MKS-REPOSITORY/MKS-OSAL-REPOSITORY/src/os/inc/project.pj
 ** Revision 1.1 2007/10/16 16:14:52EDT apcudmore 
 ** Initial revision
 ** Member added to project d:/mksdata/MKS-OSAL-REPOSITORY/src/os/inc/project.pj

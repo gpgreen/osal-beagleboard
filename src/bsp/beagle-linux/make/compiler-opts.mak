@@ -1,7 +1,7 @@
 ###############################################################################
 ## compiler-opts.mak - compiler definitions and options for building the OSAL 
 ##
-## Target: beagleboar ARM Linux
+## Target: beagleboard ARM Linux
 ##
 ## Modifications:
 ##
